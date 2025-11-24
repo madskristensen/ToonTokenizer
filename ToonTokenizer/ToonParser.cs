@@ -83,7 +83,7 @@ namespace ToonTokenizer
             // Parse key
             if (CurrentToken.Type != TokenType.Identifier && CurrentToken.Type != TokenType.String)
             {
-                throw new ParseException($"Expected property key at line {CurrentToken.Line}, column {CurrentToken.Column}");
+                throw new ParseException($"Expected property key", CurrentToken);
             }
 
             string key = CurrentToken.Value;
@@ -127,7 +127,7 @@ namespace ToonTokenizer
 
                 if (CurrentToken.Type != TokenType.RightBracket)
                 {
-                    throw new ParseException($"Expected ']' at line {CurrentToken.Line}, column {CurrentToken.Column}");
+                    throw new ParseException($"Expected ']'", CurrentToken);
                 }
                 Advance();
                 SkipWhitespace();
@@ -168,7 +168,7 @@ namespace ToonTokenizer
                 }
                 if (CurrentToken.Type != TokenType.Colon)
                 {
-                    throw new ParseException($"Expected ':' after property key at line {CurrentToken.Line}, column {CurrentToken.Column}");
+                    throw new ParseException($"Expected ':' after property key", CurrentToken);
                 }
             }
             Advance();
@@ -1082,6 +1082,48 @@ namespace ToonTokenizer
 
     public class ParseException : Exception
     {
-        public ParseException(string message) : base(message) { }
+        /// <summary>
+        /// The starting position (0-based index) of the error in the source string.
+        /// </summary>
+        public int Position { get; }
+
+        /// <summary>
+        /// The length of the span that contains the error.
+        /// </summary>
+        public int Length { get; }
+
+        /// <summary>
+        /// The line number (1-based) where the error occurs.
+        /// </summary>
+        public int Line { get; }
+
+        /// <summary>
+        /// The column number (1-based) where the error occurs.
+        /// </summary>
+        public int Column { get; }
+
+        public ParseException(string message) : base(message) 
+        {
+            Position = 0;
+            Length = 0;
+            Line = 0;
+            Column = 0;
+        }
+
+        public ParseException(string message, int position, int length, int line, int column) : base($"{message} at line {line}, column {column}")
+        {
+            Position = position;
+            Length = length;
+            Line = line;
+            Column = column;
+        }
+
+        public ParseException(string message, Token token) : base($"{message} at line {token.Line}, column {token.Column}")
+        {
+            Position = token.Position;
+            Length = token.Value?.Length ?? 1;
+            Line = token.Line;
+            Column = token.Column;
+        }
     }
 }

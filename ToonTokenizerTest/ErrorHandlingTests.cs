@@ -34,7 +34,7 @@ namespace ToonTokenizerTest
 
             Assert.IsFalse(result);
             Assert.IsNotEmpty(errors);
-            Assert.Contains("Expected", errors[0]);
+            Assert.Contains("Expected", errors[0].Message);
         }
 
         [TestMethod]
@@ -276,6 +276,79 @@ age: 30
             var value = (ToonTokenizer.Ast.StringValueNode)document.Properties[0].Value;
             Assert.Contains("\n", value.Value);
             Assert.Contains("\t", value.Value);
+        }
+
+        [TestMethod]
+        public void TryParse_ErrorIncludesSpanInformation()
+        {
+            var source = "name John";  // Missing colon
+            bool result = Toon.TryParse(source, out var errors);
+
+            Assert.IsFalse(result);
+            Assert.HasCount(1, errors);
+
+            var error = errors[0];
+            Assert.IsNotNull(error.Message);
+            Assert.IsGreaterThanOrEqualTo(0, error.Position, "Position should be non-negative");
+            Assert.IsGreaterThan(0, error.Length, "Length should be positive");
+            Assert.IsGreaterThan(0, error.Line, "Line should be positive (1-based)");
+            Assert.IsGreaterThan(0, error.Column, "Column should be positive (1-based)");
+        }
+
+        [TestMethod]
+        public void TryParse_ErrorToString_IncludesAllInformation()
+        {
+            var source = "items[3: incomplete";  // Missing closing bracket
+            bool result = Toon.TryParse(source, out var errors);
+
+            Assert.IsFalse(result);
+            Assert.HasCount(1, errors);
+
+            var errorString = errors[0].ToString();
+            Assert.Contains("line", errorString.ToLower());
+            Assert.Contains("column", errorString.ToLower());
+            Assert.Contains("position", errorString.ToLower());
+            Assert.Contains("length", errorString.ToLower());
+        }
+
+        [TestMethod]
+        public void ParseException_IncludesSpanInformation()
+        {
+            var source = "name John";  // Missing colon
+
+            try
+            {
+                Toon.Parse(source);
+                Assert.Fail("Expected ParseException");
+            }
+            catch (ParseException ex)
+            {
+                Assert.IsGreaterThanOrEqualTo(0, ex.Position, "Position should be non-negative");
+                Assert.IsGreaterThan(0, ex.Length, "Length should be positive");
+                Assert.IsGreaterThan(0, ex.Line, "Line should be positive (1-based)");
+                Assert.IsGreaterThan(0, ex.Column, "Column should be positive (1-based)");
+            }
+        }
+
+        [TestMethod]
+        public void TryParse_MultilineError_CorrectLineNumber()
+        {
+            var source = @"name: John
+age: 30
+invalid line";  // Missing colon on line 3
+
+            bool result = Toon.TryParse(source, out var errors);
+
+            Assert.IsFalse(result);
+            Assert.HasCount(1, errors);
+            Assert.AreEqual(3, errors[0].Line, "Error should be on line 3");
+        }
+
+        [TestMethod]
+        public void ToonError_EndPosition_CalculatesCorrectly()
+        {
+            var error = new ToonError("Test error", 10, 5, 1, 11);
+            Assert.AreEqual(15, error.EndPosition, "EndPosition should be Position + Length");
         }
     }
 }

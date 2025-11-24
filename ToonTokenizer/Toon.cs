@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 using ToonTokenizer.Ast;
 
 namespace ToonTokenizer
@@ -33,7 +34,7 @@ namespace ToonTokenizer
                 }
             }
             catch { }
-            
+
             var parser = new ToonParser(tokens);
             return parser.Parse();
         }
@@ -80,18 +81,18 @@ namespace ToonTokenizer
         }
 
         /// <summary>
-        /// Validates TOON source text and returns any errors.
+        /// Validates TOON source text and returns any errors with span information.
         /// </summary>
         /// <param name="source">The TOON source text to validate.</param>
-        /// <param name="errors">Output parameter for validation errors.</param>
+        /// <param name="errors">Output parameter for validation errors with position and length information.</param>
         /// <returns>True if valid, false otherwise.</returns>
-        public static bool TryParse(string source, out List<string> errors)
+        public static bool TryParse(string source, out List<ToonError> errors)
         {
-            errors = new List<string>();
+            errors = [];
 
             if (source == null)
             {
-                errors.Add("Source text cannot be null");
+                errors.Add(new ToonError("Source text cannot be null", 0, 0, 0, 0));
                 return false;
             }
 
@@ -102,12 +103,12 @@ namespace ToonTokenizer
             }
             catch (ParseException ex)
             {
-                errors.Add(ex.Message);
+                errors.Add(new ToonError(ex.Message, ex.Position, ex.Length, ex.Line, ex.Column));
                 return false;
             }
             catch (Exception ex)
             {
-                errors.Add($"Unexpected error: {ex.Message}");
+                errors.Add(new ToonError($"Unexpected error: {ex.Message}", 0, 0, 0, 0));
                 return false;
             }
         }
