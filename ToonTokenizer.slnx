@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ToonTokenizer/ToonTokenizer.csproj" />
+  <Project Path="ToonTokenizerTest/ToonTokenizerTest.csproj" />
+</Solution>
