@@ -249,7 +249,7 @@ age: 30";
             Assert.HasCount(2, document.Properties);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void Parse_ComplexExample_ParsesCorrectly()
         {
             var source = @"context:

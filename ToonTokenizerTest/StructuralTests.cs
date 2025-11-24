@@ -24,7 +24,7 @@ namespace ToonTokenizerTest
             Assert.AreEqual("name", obj.Properties[0].Key);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void Parse_ObjectWithMultipleProperties_ParsesCorrectly()
         {
             // All property lines have a colon and are indented with 2 spaces

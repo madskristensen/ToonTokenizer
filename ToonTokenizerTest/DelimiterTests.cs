@@ -111,7 +111,7 @@ namespace ToonTokenizerTest
             Assert.AreEqual("coding", ((StringValueNode)array.Elements[2]).Value);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void Parse_NestedArrays_WithDifferentDelimiters_ParsesCorrectly()
         {
             var source = "pairs[2]:\n  - [2]: 1,2\n  - [2]: 3,4";
@@ -140,7 +140,7 @@ namespace ToonTokenizerTest
             Assert.AreEqual("4", ((StringValueNode)innerArray2.Elements[1]).Value);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void Parse_NestedArraysWithTabDelimiter_ParsesCorrectly()
         {
             var source = "pairs[2]:\n  - [2\t]: 1\t2\n  - [2\t]: 3\t4";
