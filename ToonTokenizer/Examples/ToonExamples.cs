@@ -18,6 +18,7 @@ namespace ToonTokenizer.Examples
             ArrayExample();
             TableArrayExample();
             ComplexExample();
+            JsonToToonExample();
         }
 
         private static void SimplePropertyExample()
@@ -122,6 +123,32 @@ hikes[3]{id,name,distanceKm,elevationGain,companion,wasSunny}:
 
             var document = Toon.Parse(toonSource);
             Console.WriteLine(document.ToDebugString());
+        }
+
+        private static void JsonToToonExample()
+        {
+            Console.WriteLine("6. JSON to TOON Conversion:");
+            
+            string json = @"{
+  ""app"": {
+    ""name"": ""MyApp"",
+    ""version"": ""1.0"",
+    ""features"": [""auth"", ""api"", ""ui""]
+  },
+  ""users"": [
+    {""id"": 1, ""name"": ""Alice"", ""role"": ""admin""},
+    {""id"": 2, ""name"": ""Bob"", ""role"": ""user""}
+  ]
+}";
+
+            Console.WriteLine("Original JSON:");
+            Console.WriteLine(json);
+            Console.WriteLine();
+            
+            string toon = Toon.Encode(json);
+            Console.WriteLine("Converted to TOON:");
+            Console.WriteLine(toon);
+            Console.WriteLine();
         }
 
         private static string GetValueString(AstNode node)

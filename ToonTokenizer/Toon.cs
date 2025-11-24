@@ -39,6 +39,33 @@ namespace ToonTokenizer
         }
 
         /// <summary>
+        /// Encodes a JSON string to TOON format.
+        /// </summary>
+        /// <param name="json">The JSON string to convert.</param>
+        /// <returns>A TOON formatted string.</returns>
+        public static string Encode(string json)
+        {
+            return Encode(json, new ToonEncoderOptions());
+        }
+
+        /// <summary>
+        /// Encodes a JSON string to TOON format with the specified options.
+        /// </summary>
+        /// <param name="json">The JSON string to convert.</param>
+        /// <param name="options">Encoding options.</param>
+        /// <returns>A TOON formatted string.</returns>
+        public static string Encode(string json, ToonEncoderOptions options)
+        {
+            if (json == null)
+                throw new ArgumentNullException(nameof(json));
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            var encoder = new ToonEncoder(options);
+            return encoder.EncodeFromJson(json);
+        }
+
+        /// <summary>
         /// Tokenizes TOON source text and returns all tokens.
         /// </summary>
         /// <param name="source">The TOON source text to tokenize.</param>
