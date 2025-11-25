@@ -376,9 +376,9 @@ invalid line";  // Missing colon on line 3
 
             Assert.IsNotNull(result.Tokens, "Tokens should not be null");
             Assert.IsNotEmpty(result.Tokens, "Tokens should not be empty");
-            
+
             // Verify we have the expected tokens: Identifier, Colon, Identifier, EOF
-            Assert.IsTrue(result.Tokens.Count >= 3, "Should have at least 3 tokens");
+            Assert.IsGreaterThanOrEqualTo(3, result.Tokens.Count, "Should have at least 3 tokens");
             Assert.AreEqual(TokenType.Identifier, result.Tokens[0].Type);
             Assert.AreEqual("name", result.Tokens[0].Value);
         }
@@ -413,16 +413,16 @@ age: 30";
             var result = Toon.Parse(source);
 
             Assert.IsNotNull(result.Tokens);
-            
+
             // Should have tokens for both properties
             var identifiers = result.Tokens.Where(t => t.Type == TokenType.Identifier).ToList();
-            Assert.IsTrue(identifiers.Count >= 2, "Should have at least 2 identifiers (property keys)");
-            
+            Assert.IsGreaterThanOrEqualTo(2, identifiers.Count, "Should have at least 2 identifiers (property keys)");
+
             var colons = result.Tokens.Where(t => t.Type == TokenType.Colon).ToList();
-            Assert.AreEqual(2, colons.Count, "Should have 2 colons");
-            
+            Assert.HasCount(2, colons, "Should have 2 colons");
+
             var numbers = result.Tokens.Where(t => t.Type == TokenType.Number).ToList();
-            Assert.AreEqual(1, numbers.Count, "Should have 1 number token (30)");
+            Assert.HasCount(1, numbers, "Should have 1 number token (30)");
         }
     }
 }

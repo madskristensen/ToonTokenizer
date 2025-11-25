@@ -34,12 +34,12 @@ namespace ToonTokenizer
         {
             var tokens = new List<Token>();
             Token token;
-            
+
             while ((token = NextToken()).Type != TokenType.EndOfFile)
             {
                 tokens.Add(token);
             }
-            
+
             tokens.Add(token); // Add EOF token
             return tokens;
         }
@@ -182,7 +182,7 @@ namespace ToonTokenizer
             }
 
             int currentIndent = _indentStack.Peek();
-            
+
             if (indentCount > currentIndent)
             {
                 _indentStack.Push(indentCount);
@@ -227,10 +227,10 @@ namespace ToonTokenizer
             char value = _source[_position];
             int start = _position;
             int startColumn = _column;
-            
+
             _position++;
             _column++;
-            
+
             return new Token(type, value.ToString(), _line, startColumn, start, 1);
         }
 
@@ -257,7 +257,7 @@ namespace ToonTokenizer
                         case 't': sb.Append('\t'); break;
                         case '\\': sb.Append('\\'); break;
                         case '"': sb.Append('"'); break;
-                        case '\'': 
+                        case '\'':
                             // Single quotes can be escaped within single-quoted strings
                             if (quote == '\'')
                                 sb.Append('\'');
@@ -296,11 +296,9 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
-            bool isNegative = false;
 
             if (_source[_position] == '-')
             {
-                isNegative = true;
                 _position++;
                 _column++;
             }
@@ -347,7 +345,7 @@ namespace ToonTokenizer
             }
 
             string value = _source.Substring(start, _position - start);
-            
+
             // TOON spec: Check for forbidden leading zeros
             // Forbidden: "05", "0001", "-01" (integers with leading zeros, excluding "0", "-0")
             // Allowed: "0", "-0", "0.1", "-0.1", "1e-6"
@@ -358,11 +356,11 @@ namespace ToonTokenizer
                 integerPartEnd++;
             }
             string integerPart = _source.Substring(digitStart, integerPartEnd - digitStart);
-            
+
             // Check if it's an integer (no dot, no exponent) with forbidden leading zeros
             bool isInteger = !hasDot && !hasExponent;
-            bool hasForbiddenLeadingZero = isInteger && integerPart.Length > 1 && integerPart.StartsWith("0");
-            
+            bool hasForbiddenLeadingZero = isInteger && integerPart.Length > 1 && integerPart[0] == '0';
+
             if (hasForbiddenLeadingZero)
             {
                 // Treat as string per TOON spec
@@ -438,15 +436,15 @@ namespace ToonTokenizer
             }
             // Allow @ as a valid starting character (for emails, handles, etc.)
             // Per TOON spec §7.2: unquoted strings cannot contain: :, ", \, [, ], {, }, or comment markers (#, /)
-            return !char.IsWhiteSpace(c) && c != ':' && c != ',' && c != '[' && c != ']' && 
+            return !char.IsWhiteSpace(c) && c != ':' && c != ',' && c != '[' && c != ']' &&
                    c != '{' && c != '}' && c != '#' && c != '/' && c != '"' && c != '\'' && c != '\\';
         }
 
-        private bool IsUnquotedStringChar(char c)
+        private static bool IsUnquotedStringChar(char c)
         {
             // Allow hyphens and @ in the middle of unquoted strings
             // Per TOON spec §7.2: unquoted strings cannot contain: :, ", \, [, ], {, }, or comment markers (#, /)
-            return !char.IsWhiteSpace(c) && c != ',' && c != ':' && c != '[' && c != ']' && 
+            return !char.IsWhiteSpace(c) && c != ',' && c != ':' && c != '[' && c != ']' &&
                    c != '{' && c != '}' && c != '#' && c != '/' && c != '"' && c != '\\';
         }
 

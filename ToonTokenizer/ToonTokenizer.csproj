@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     
     <!-- NuGet Package Metadata -->
     <PackageId>ToonTokenizer</PackageId>
-    <Version>1.0.0</Version>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <!-- <VersionSuffix>beta</VersionSuffix> -->
     <Authors>Mads Kristensen</Authors>
     <Company>Mads Kristensen</Company>
     <Description>Complete .NET library for parsing and tokenizing TOON (Token-Oriented Object Notation) - a compact, human-readable format optimized for LLM prompts. Includes full lexer, resilient parser, AST generation, position tracking, and extension methods for IDE integration.</Description>
@@ -19,16 +20,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <Copyright>Copyright © 2025 Mads Kristensen</Copyright>
-    <PackageReleaseNotes>
-      Initial 1.0.0 release:
-      - Complete TOON v3.0 specification support
-      - Resilient parsing with error recovery
-      - Tokens included in parse results
-      - Rich error reporting with precise locations
-      - Extension methods for IDE integration
-      - Visitor pattern for AST traversal
-      - 230+ unit tests
-    </PackageReleaseNotes>
+    <PackageReleaseNotes>v1.0.0: Initial release with full TOON v3.0 spec compliance, unterminated string validation, and comprehensive quote handling.</PackageReleaseNotes>
     
     <!-- Build Settings -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -36,16 +28,22 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    
+    <!-- Package Validation -->
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <GenerateCompatibilitySuppressionFile>true</GenerateCompatibilitySuppressionFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\README.md')" />
     <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="System.Text.Json" Version="10.0.0" />
   </ItemGroup>
 
 </Project>
-

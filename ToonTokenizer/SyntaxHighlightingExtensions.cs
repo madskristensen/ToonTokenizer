@@ -27,7 +27,7 @@ namespace ToonTokenizer
         /// <summary>
         /// Gets the token at a specific position (line and column).
         /// </summary>
-        public static Token GetTokenAt(this List<Token> tokens, int line, int column)
+        public static Token? GetTokenAt(this List<Token> tokens, int line, int column)
         {
             return tokens.FirstOrDefault(t =>
                 t.Line == line &&
