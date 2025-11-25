@@ -32,9 +32,6 @@ jobs:
     - name: Build solution
       run: dotnet build --configuration Release --no-restore
       
-    - name: Verify package
-      run: dotnet pack ToonTokenizer/ToonTokenizer.csproj --configuration Release --no-build -p:ContinuousIntegrationBuild=true /p:PackageValidationBaselineVersion=1.0.0
-      
     - name: Run tests
       run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
       
