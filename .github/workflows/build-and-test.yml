@@ -57,7 +57,7 @@ jobs:
     
     - name: Pack NuGet package
       if: steps.check_release.outputs.should_release == 'true'
-      run: dotnet pack ToonTokenizer/ToonTokenizer.csproj --configuration Release --no-build --output ./nupkg
+      run: dotnet pack ToonTokenizer/ToonTokenizer.csproj --configuration Release --no-build --output ./nupkg -p:BuildNumber=${{ github.run_number }}
     
     - name: Publish to NuGet.org
       if: steps.check_release.outputs.should_release == 'true'
