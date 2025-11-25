@@ -5,10 +5,10 @@ Console.WriteLine("=== Example 1: TryParse with error spans ===");
 var source1 = @"name John
 age: 30";
 
-if (!Toon.TryParse(source1, out var errors))
+if (!Toon.TryParse(source1, out var result1))
 {
-    Console.WriteLine($"Found {errors.Count} error(s):");
-    foreach (var error in errors)
+    Console.WriteLine($"Found {result1.Errors.Count} error(s):");
+    foreach (var error in result1.Errors)
     {
         Console.WriteLine($"  - {error.Message}");
         Console.WriteLine($"    Position: {error.Position}, Length: {error.Length}");
@@ -36,10 +36,10 @@ var source2 = @"users[5]{id,name}:
   2 Bob
   3,Charlie";
 
-if (!Toon.TryParse(source2, out var errors2))
+if (!Toon.TryParse(source2, out var result2))
 {
-    Console.WriteLine($"Found {errors2.Count} error(s):");
-    foreach (var error in errors2)
+    Console.WriteLine($"Found {result2.Errors.Count} error(s):");
+    foreach (var error in result2.Errors)
     {
         Console.WriteLine($"  Error: {error}");
     }
@@ -51,20 +51,24 @@ else
 
 Console.WriteLine();
 
-// Example 3: Catching ParseException directly
-Console.WriteLine("=== Example 3: ParseException with span info ===");
+// Example 3: Using Parse with result object
+Console.WriteLine("=== Example 3: Parse result with error info ===");
 var source3 = "items[3: incomplete";
 
-try
+var result3 = Toon.Parse(source3);
+if (!result3.IsSuccess)
 {
-    var doc = Toon.Parse(source3);
+    Console.WriteLine($"Parse failed with {result3.Errors.Count} error(s):");
+    foreach (var error in result3.Errors)
+    {
+        Console.WriteLine($"  Message: {error.Message}");
+        Console.WriteLine($"  Position: {error.Position}");
+        Console.WriteLine($"  Length: {error.Length}");
+        Console.WriteLine($"  Line: {error.Line}");
+        Console.WriteLine($"  Column: {error.Column}");
+    }
 }
-catch (ParseException ex)
+else
 {
-    Console.WriteLine($"ParseException caught:");
-    Console.WriteLine($"  Message: {ex.Message}");
-    Console.WriteLine($"  Position: {ex.Position}");
-    Console.WriteLine($"  Length: {ex.Length}");
-    Console.WriteLine($"  Line: {ex.Line}");
-    Console.WriteLine($"  Column: {ex.Column}");
+    Console.WriteLine($"Parse successful! Found {result3.Document?.Properties.Count ?? 0} properties.");
 }

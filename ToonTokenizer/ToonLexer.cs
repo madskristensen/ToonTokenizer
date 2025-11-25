@@ -284,21 +284,26 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
+            bool isNegative = false;
 
             if (_source[_position] == '-')
             {
+                isNegative = true;
                 _position++;
                 _column++;
             }
 
+            int digitStart = _position;
             while (_position < _source.Length && char.IsDigit(_source[_position]))
             {
                 _position++;
                 _column++;
             }
 
+            bool hasDot = false;
             if (_position < _source.Length && _source[_position] == '.')
             {
+                hasDot = true;
                 _position++;
                 _column++;
 
@@ -309,8 +314,10 @@ namespace ToonTokenizer
                 }
             }
 
+            bool hasExponent = false;
             if (_position < _source.Length && (_source[_position] == 'e' || _source[_position] == 'E'))
             {
+                hasExponent = true;
                 _position++;
                 _column++;
 
@@ -328,6 +335,28 @@ namespace ToonTokenizer
             }
 
             string value = _source.Substring(start, _position - start);
+            
+            // TOON spec: Check for forbidden leading zeros
+            // Forbidden: "05", "0001", "-01" (integers with leading zeros, excluding "0", "-0")
+            // Allowed: "0", "-0", "0.1", "-0.1", "1e-6"
+            // Extract just the integer part before decimal or exponent
+            int integerPartEnd = digitStart;
+            while (integerPartEnd < _source.Length && char.IsDigit(_source[integerPartEnd]))
+            {
+                integerPartEnd++;
+            }
+            string integerPart = _source.Substring(digitStart, integerPartEnd - digitStart);
+            
+            // Check if it's an integer (no dot, no exponent) with forbidden leading zeros
+            bool isInteger = !hasDot && !hasExponent;
+            bool hasForbiddenLeadingZero = isInteger && integerPart.Length > 1 && integerPart.StartsWith("0");
+            
+            if (hasForbiddenLeadingZero)
+            {
+                // Treat as string per TOON spec
+                return new Token(TokenType.String, value, _line, startColumn, start, value.Length);
+            }
+
             return new Token(TokenType.Number, value, _line, startColumn, start, value.Length);
         }
 
@@ -336,8 +365,8 @@ namespace ToonTokenizer
             int start = _position;
             int startColumn = _column;
 
-            // Allow hyphens within value tokens (kebab-case)
-            while (_position < _source.Length && (char.IsLetterOrDigit(_source[_position]) || _source[_position] == '_' || _source[_position] == '-'))
+            // Allow hyphens, dots, and @ within value tokens (kebab-case, dotted paths, and emails)
+            while (_position < _source.Length && (char.IsLetterOrDigit(_source[_position]) || _source[_position] == '_' || _source[_position] == '-' || _source[_position] == '.' || _source[_position] == '@'))
             {
                 _position++;
                 _column++;
@@ -395,15 +424,18 @@ namespace ToonTokenizer
                 // If '-' is at the start and followed by digit, it's a number
                 return !char.IsDigit(Peek());
             }
+            // Allow @ as a valid starting character (for emails, handles, etc.)
+            // Per TOON spec §7.2: unquoted strings cannot contain: :, ", \, [, ], {, }, or comment markers (#, /)
             return !char.IsWhiteSpace(c) && c != ':' && c != ',' && c != '[' && c != ']' && 
-                   c != '{' && c != '}' && c != '#' && c != '/' && c != '"' && c != '\'';
+                   c != '{' && c != '}' && c != '#' && c != '/' && c != '"' && c != '\'' && c != '\\';
         }
 
         private bool IsUnquotedStringChar(char c)
         {
-            // Allow hyphens in the middle of unquoted strings
+            // Allow hyphens and @ in the middle of unquoted strings
+            // Per TOON spec §7.2: unquoted strings cannot contain: :, ", \, [, ], {, }, or comment markers (#, /)
             return !char.IsWhiteSpace(c) && c != ',' && c != ':' && c != '[' && c != ']' && 
-                   c != '{' && c != '}';
+                   c != '{' && c != '}' && c != '#' && c != '/' && c != '"' && c != '\\';
         }
 
         private char Peek(int offset = 1)

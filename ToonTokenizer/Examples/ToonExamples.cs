@@ -29,10 +29,16 @@ namespace ToonTokenizer.Examples
 age: 30
 active: true";
 
-            var document = Toon.Parse(toonSource);
-            Console.WriteLine($"Properties count: {document.Properties.Count}");
+            var result = Toon.Parse(toonSource);
+            if (!result.IsSuccess)
+            {
+                Console.WriteLine($"Parse failed: {result.Errors[0].Message}");
+                return;
+            }
+
+            Console.WriteLine($"Properties count: {result.Document!.Properties.Count}");
             
-            foreach (var prop in document.Properties)
+            foreach (var prop in result.Document.Properties)
             {
                 Console.WriteLine($"  {prop.Key}: {GetValueString(prop.Value)}");
             }
@@ -50,8 +56,14 @@ active: true";
     theme: dark
     notifications: true";
 
-            var document = Toon.Parse(toonSource);
-            Console.WriteLine(document.ToDebugString());
+            var result = Toon.Parse(toonSource);
+            if (!result.IsSuccess)
+            {
+                Console.WriteLine($"Parse failed: {result.Errors[0].Message}");
+                return;
+            }
+
+            Console.WriteLine(result.Document!.ToDebugString());
         }
 
         private static void ArrayExample()
@@ -61,9 +73,14 @@ active: true";
             string toonSource = @"colors[3]: red,green,blue
 numbers[4]: 1,2,3,4";
 
-            var document = Toon.Parse(toonSource);
+            var result = Toon.Parse(toonSource);
+            if (!result.IsSuccess)
+            {
+                Console.WriteLine($"Parse failed: {result.Errors[0].Message}");
+                return;
+            }
             
-            foreach (var prop in document.Properties)
+            foreach (var prop in result.Document!.Properties)
             {
                 Console.WriteLine($"  {prop.Key}:");
                 if (prop.Value is ArrayNode arr)
@@ -86,9 +103,14 @@ numbers[4]: 1,2,3,4";
   2,Bob,30
   3,Charlie,35";
 
-            var document = Toon.Parse(toonSource);
+            var result = Toon.Parse(toonSource);
+            if (!result.IsSuccess)
+            {
+                Console.WriteLine($"Parse failed: {result.Errors[0].Message}");
+                return;
+            }
             
-            if (document.Properties.Count > 0 && document.Properties[0].Value is TableArrayNode table)
+            if (result.Document!.Properties.Count > 0 && result.Document.Properties[0].Value is TableArrayNode table)
             {
                 Console.WriteLine($"  Schema: {string.Join(", ", table.Schema)}");
                 Console.WriteLine($"  Rows:");
@@ -121,8 +143,14 @@ hikes[3]{id,name,distanceKm,elevationGain,companion,wasSunny}:
   2,Ridge Overlook,9.2,540,luis,false
   3,Wildflower Loop,5.1,180,sam,true";
 
-            var document = Toon.Parse(toonSource);
-            Console.WriteLine(document.ToDebugString());
+            var result = Toon.Parse(toonSource);
+            if (!result.IsSuccess)
+            {
+                Console.WriteLine($"Parse failed: {result.Errors[0].Message}");
+                return;
+            }
+
+            Console.WriteLine(result.Document!.ToDebugString());
         }
 
         private static void JsonToToonExample()

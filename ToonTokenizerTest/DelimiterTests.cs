@@ -10,11 +10,11 @@ namespace ToonTokenizerTest
         public void Parse_CommaDelimiter_Default_ParsesCorrectly()
         {
             var source = "tags[3]: reading,gaming,coding";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.AreEqual("tags", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType<ArrayNode>(property.Value);
 
             var array = (ArrayNode)property.Value;
             Assert.AreEqual(3, array.DeclaredSize);
@@ -29,11 +29,11 @@ namespace ToonTokenizerTest
         public void Parse_TabDelimiter_InlineArray_ParsesCorrectly()
         {
             var source = "tags[3\t]: reading\tgaming\tcoding";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.AreEqual("tags", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType<ArrayNode>(property.Value);
 
             var array = (ArrayNode)property.Value;
             Assert.AreEqual(3, array.DeclaredSize);
@@ -48,11 +48,11 @@ namespace ToonTokenizerTest
         public void Parse_PipeDelimiter_InlineArray_ParsesCorrectly()
         {
             var source = "tags[3|]: reading|gaming|coding";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.AreEqual("tags", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType<ArrayNode>(property.Value);
 
             var array = (ArrayNode)property.Value;
             Assert.AreEqual(3, array.DeclaredSize);
@@ -67,11 +67,11 @@ namespace ToonTokenizerTest
         public void Parse_TabDelimiter_TableArray_ParsesCorrectly()
         {
             var source = "items[2\t]{sku\tname\tqty\tprice}:\n  A1\tWidget\t2\t9.99\n  B2\tGadget\t1\t14.5";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.AreEqual("items", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(TableArrayNode));
+            Assert.IsInstanceOfType<TableArrayNode>(property.Value);
 
             var table = (TableArrayNode)property.Value;
             Assert.AreEqual(2, table.DeclaredSize);
@@ -99,10 +99,10 @@ namespace ToonTokenizerTest
         public void Parse_PipeDelimiter_TableArray_ParsesCorrectly()
         {
             var source = "tags[3|]: reading|gaming|coding";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(ArrayNode));
+            var property = result.Document!.Properties[0];
+            Assert.IsInstanceOfType<ArrayNode>(property.Value);
 
             var array = (ArrayNode)property.Value;
             Assert.HasCount(3, array.Elements);
@@ -115,11 +115,11 @@ namespace ToonTokenizerTest
         public void Parse_NestedArrays_WithDifferentDelimiters_ParsesCorrectly()
         {
             var source = "pairs[2]:\n  - [2]: 1,2\n  - [2]: 3,4";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.AreEqual("pairs", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType<ArrayNode>(property.Value);
 
             var outerArray = (ArrayNode)property.Value;
             Assert.AreEqual(2, outerArray.DeclaredSize);
@@ -144,9 +144,9 @@ namespace ToonTokenizerTest
         public void Parse_NestedArraysWithTabDelimiter_ParsesCorrectly()
         {
             var source = "pairs[2]:\n  - [2\t]: 1\t2\n  - [2\t]: 3\t4";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             var outerArray = (ArrayNode)property.Value;
             Assert.AreEqual(2, outerArray.DeclaredSize);
             Assert.HasCount(2, outerArray.Elements);
@@ -163,9 +163,9 @@ namespace ToonTokenizerTest
         {
             // Outer array uses pipe, inner arrays use comma (default)
             var source = "data[2|]: a|b";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             var array = (ArrayNode)property.Value;
             Assert.HasCount(2, array.Elements);
             Assert.AreEqual("a", ((StringValueNode)array.Elements[0]).Value);

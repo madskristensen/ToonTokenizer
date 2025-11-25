@@ -6,54 +6,70 @@ namespace ToonTokenizerTest
     public class ErrorHandlingTests
     {
         [TestMethod]
-        public void Parse_MissingColon_ThrowsParseException()
+        public void Parse_MissingColon_ReturnsErrorInResult()
         {
             var source = "name John";
-            Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
+            var result = Toon.Parse(source);
+
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.IsNotEmpty(result.Errors, "Errors collection should not be empty");
+            Assert.Contains("':'", result.Errors[0].Message, "Error should mention missing colon");
+            Assert.IsNotNull(result.Document, "Document should still be returned");
         }
 
         [TestMethod]
-        public void Parse_UnmatchedBracket_ThrowsParseException()
+        public void Parse_UnmatchedBracket_ReturnsErrorInResult()
         {
             var source = "items[3: a,b,c";
-            Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
+            var result = Toon.Parse(source);
+
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.IsNotEmpty(result.Errors);
+            Assert.Contains("']'", result.Errors[0].Message, "Error should mention missing bracket");
+            Assert.IsNotNull(result.Document, "Document should still be returned");
         }
 
         [TestMethod]
-        public void Parse_UnmatchedBrace_ThrowsParseException()
+        public void Parse_UnmatchedBrace_ReturnsErrorInResult()
         {
             var source = "schema{id,name: 1,test";
-            Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
+            var result = Toon.Parse(source);
+
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.IsNotEmpty(result.Errors);
+            Assert.IsNotNull(result.Document, "Document should still be returned");
         }
 
         [TestMethod]
-        public void TryParse_InvalidSyntax_ReturnsFalseWithError()
+        public void TryParse_InvalidSyntax_ReturnsTrueWithErrors()
         {
             var source = "invalid without colon";
-            bool result = Toon.TryParse(source, out var errors);
+            bool success = Toon.TryParse(source, out var result);
 
-            Assert.IsFalse(result);
-            Assert.IsNotEmpty(errors);
-            Assert.Contains("Expected", errors[0].Message);
+            Assert.IsTrue(success, "TryParse should return true for completed parse");
+            Assert.IsTrue(result.HasErrors, "Result should have errors");
+            Assert.IsNotEmpty(result.Errors);
+            Assert.Contains("Expected", result.Errors[0].Message);
+            Assert.IsNotNull(result.Document, "Document should be returned even with errors");
         }
 
         [TestMethod]
         public void TryParse_ValidSyntax_ReturnsTrueWithNoErrors()
         {
             var source = "name: John";
-            bool result = Toon.TryParse(source, out var errors);
+            bool success = Toon.TryParse(source, out var result);
 
-            Assert.IsTrue(result);
-            Assert.IsEmpty(errors);
+            Assert.IsTrue(success);
+            Assert.IsEmpty(result.Errors);
         }
 
         [TestMethod]
         public void TryParse_NullSource_ReturnsFalseWithError()
         {
-            bool result = Toon.TryParse(null!, out var errors);
+            bool success = Toon.TryParse(null!, out var result);
 
-            Assert.IsFalse(result);
-            Assert.IsNotEmpty(errors);
+            Assert.IsFalse(success);
+            Assert.IsNotEmpty(result.Errors);
         }
 
         [TestMethod]
@@ -74,61 +90,62 @@ namespace ToonTokenizerTest
             var source = @"name: John
 invalid without colon";
 
-            var ex = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("line", ex.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsNotEmpty(result.Errors);
+            Assert.AreEqual(2, result.Errors[0].Line, "Error should be on line 2");
         }
 
         [TestMethod]
         public void Parse_ErrorMessage_ContainsColumnNumber()
         {
             var source = "name John";
-            var ex = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.IsTrue(ex.Message.Contains("column") || ex.Message.Contains("col"));
+            var result = Toon.Parse(source);
+
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsGreaterThan(0, result.Errors[0].Column, "Error should have column number");
         }
 
         [TestMethod]
-        public void Parse_TableArrayMissingComma_ThrowsParseException()
+        public void Parse_TableArrayMissingComma_ReturnsErrorInResult()
         {
             var source = @"data[2]{id,name}:
   1 Alice
   2,Bob";
 
-            try
-            {
-                Toon.Parse(source);
-                Assert.Fail("Expected ParseException to be thrown");
-            }
-            catch (ParseException)
-            {
-                // Expected
-            }
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have delimiter error");
+            Assert.IsNotNull(result.Document, "Document should still be returned");
         }
 
         [TestMethod]
-        public void Parse_InvalidSchemaFormat_ThrowsParseException()
+        public void Parse_InvalidSchemaFormat_ReturnsErrorInResult()
         {
             var source = "data[2]{id name}: 1,test";
-            Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
+            var result = Toon.Parse(source);
+
+            Assert.IsTrue(result.HasErrors, "Should have schema format error");
+            Assert.IsNotNull(result.Document, "Document should still be returned");
         }
 
         [TestMethod]
         public void Parse_EmptySource_ReturnsEmptyDocument()
         {
             var source = "";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.IsNotNull(document);
-            Assert.IsEmpty(document.Properties);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsEmpty(result.Document!.Properties);
         }
 
         [TestMethod]
         public void Parse_WhitespaceOnly_ReturnsEmptyDocument()
         {
             var source = "   \n  \n  ";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.IsNotNull(document);
-            Assert.IsEmpty(document.Properties);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsEmpty(result.Document!.Properties);
         }
 
         [TestMethod]
@@ -137,20 +154,20 @@ invalid without colon";
             var source = @"# Comment 1
 // Comment 2
 # Comment 3";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.IsNotNull(document);
-            Assert.IsEmpty(document.Properties);
+            Assert.IsFalse(result.IsSuccess);
+            Assert.IsEmpty(result.Document!.Properties);
         }
 
         [TestMethod]
         public void Parse_PropertyWithInlineComment_ParsesCorrectly()
         {
             var source = "name: John # This is John";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(1, document.Properties);
-            Assert.AreEqual("name", document.Properties[0].Key);
+            Assert.HasCount(1, result.Document!.Properties);
+            Assert.AreEqual("name", result.Document!.Properties[0].Key);
         }
 
         [TestMethod]
@@ -161,9 +178,9 @@ name: John
 # Middle comment
 age: 30
 // Another comment style";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(2, document.Properties);
+            Assert.HasCount(2, result.Document!.Properties);
         }
 
         [TestMethod]
@@ -191,9 +208,9 @@ age: 30
         {
             var longValue = new string('a', 10000);
             var source = $"key: {longValue}";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(1, document.Properties);
+            Assert.HasCount(1, result.Document!.Properties);
         }
 
         [TestMethod]
@@ -211,9 +228,9 @@ age: 30
             lines.Add($"{indent}value: deep");
 
             var source = string.Join("\n", lines);
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(1, document.Properties);
+            Assert.HasCount(1, result.Document!.Properties);
         }
 
         [TestMethod]
@@ -226,9 +243,9 @@ age: 30
             }
 
             var source = string.Join("\n", lines);
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(100, document.Properties);
+            Assert.HasCount(100, result.Document!.Properties);
         }
 
         [TestMethod]
@@ -236,9 +253,9 @@ age: 30
         {
             var values = string.Join(",", Enumerable.Range(1, 100));
             var source = $"numbers[100]: {values}";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ToonTokenizer.Ast.ArrayNode)document.Properties[0].Value;
+            var array = (ToonTokenizer.Ast.ArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(100, array.Elements);
         }
 
@@ -252,9 +269,9 @@ age: 30
             }
 
             var source = string.Join("\n", lines);
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (ToonTokenizer.Ast.TableArrayNode)document.Properties[0].Value;
+            var table = (ToonTokenizer.Ast.TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(50, table.Rows);
         }
 
@@ -262,18 +279,18 @@ age: 30
         public void Parse_UnicodeCharacters_ParsesCorrectly()
         {
             var source = "name: 日本語";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(1, document.Properties);
+            Assert.HasCount(1, result.Document!.Properties);
         }
 
         [TestMethod]
         public void Parse_SpecialCharactersInQuotedString_ParsesCorrectly()
         {
             var source = "text: \"Hello\\nWorld\\t!\"";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var value = (ToonTokenizer.Ast.StringValueNode)document.Properties[0].Value;
+            var value = (ToonTokenizer.Ast.StringValueNode)result.Document!.Properties[0].Value;
             Assert.Contains("\n", value.Value);
             Assert.Contains("\t", value.Value);
         }
@@ -282,12 +299,13 @@ age: 30
         public void TryParse_ErrorIncludesSpanInformation()
         {
             var source = "name John";  // Missing colon
-            bool result = Toon.TryParse(source, out var errors);
+            bool success = Toon.TryParse(source, out var result);
 
-            Assert.IsFalse(result);
-            Assert.HasCount(1, errors);
+            Assert.IsTrue(success, "TryParse should return true for completed parse");
+            Assert.IsTrue(result.HasErrors);
+            Assert.HasCount(1, result.Errors);
 
-            var error = errors[0];
+            var error = result.Errors[0];
             Assert.IsNotNull(error.Message);
             Assert.IsGreaterThanOrEqualTo(0, error.Position, "Position should be non-negative");
             Assert.IsGreaterThan(0, error.Length, "Length should be positive");
@@ -299,12 +317,13 @@ age: 30
         public void TryParse_ErrorToString_IncludesAllInformation()
         {
             var source = "items[3: incomplete";  // Missing closing bracket
-            bool result = Toon.TryParse(source, out var errors);
+            bool success = Toon.TryParse(source, out var result);
 
-            Assert.IsFalse(result);
-            Assert.HasCount(1, errors);
+            Assert.IsTrue(success, "TryParse should return true for completed parse");
+            Assert.IsTrue(result.HasErrors);
+            Assert.HasCount(2, result.Errors);
 
-            var errorString = errors[0].ToString();
+            var errorString = result.Errors[0].ToString();
             Assert.Contains("line", errorString.ToLower());
             Assert.Contains("column", errorString.ToLower());
             Assert.Contains("position", errorString.ToLower());
@@ -312,22 +331,19 @@ age: 30
         }
 
         [TestMethod]
-        public void ParseException_IncludesSpanInformation()
+        public void Parse_ErrorIncludesSpanInformation()
         {
             var source = "name John";  // Missing colon
 
-            try
-            {
-                Toon.Parse(source);
-                Assert.Fail("Expected ParseException");
-            }
-            catch (ParseException ex)
-            {
-                Assert.IsGreaterThanOrEqualTo(0, ex.Position, "Position should be non-negative");
-                Assert.IsGreaterThan(0, ex.Length, "Length should be positive");
-                Assert.IsGreaterThan(0, ex.Line, "Line should be positive (1-based)");
-                Assert.IsGreaterThan(0, ex.Column, "Column should be positive (1-based)");
-            }
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsNotEmpty(result.Errors);
+
+            var error = result.Errors[0];
+            Assert.IsGreaterThanOrEqualTo(0, error.Position, "Position should be non-negative");
+            Assert.IsGreaterThan(0, error.Length, "Length should be positive");
+            Assert.IsGreaterThan(0, error.Line, "Line should be positive (1-based)");
+            Assert.IsGreaterThan(0, error.Column, "Column should be positive (1-based)");
         }
 
         [TestMethod]
@@ -337,11 +353,12 @@ age: 30
 age: 30
 invalid line";  // Missing colon on line 3
 
-            bool result = Toon.TryParse(source, out var errors);
+            bool success = Toon.TryParse(source, out var result);
 
-            Assert.IsFalse(result);
-            Assert.HasCount(1, errors);
-            Assert.AreEqual(3, errors[0].Line, "Error should be on line 3");
+            Assert.IsTrue(success, "TryParse should return true even with parse errors");
+            Assert.IsTrue(result.HasErrors);
+            Assert.HasCount(1, result.Errors);
+            Assert.AreEqual(3, result.Errors[0].Line, "Error should be on line 3");
         }
 
         [TestMethod]
@@ -349,6 +366,63 @@ invalid line";  // Missing colon on line 3
         {
             var error = new ToonError("Test error", 10, 5, 1, 11);
             Assert.AreEqual(15, error.EndPosition, "EndPosition should be Position + Length");
+        }
+
+        [TestMethod]
+        public void Parse_IncludesTokensInResult()
+        {
+            var source = "name: John";
+            var result = Toon.Parse(source);
+
+            Assert.IsNotNull(result.Tokens, "Tokens should not be null");
+            Assert.IsNotEmpty(result.Tokens, "Tokens should not be empty");
+            
+            // Verify we have the expected tokens: Identifier, Colon, Identifier, EOF
+            Assert.IsTrue(result.Tokens.Count >= 3, "Should have at least 3 tokens");
+            Assert.AreEqual(TokenType.Identifier, result.Tokens[0].Type);
+            Assert.AreEqual("name", result.Tokens[0].Value);
+        }
+
+        [TestMethod]
+        public void Parse_WithErrors_IncludesTokensInResult()
+        {
+            var source = "name John";  // Missing colon
+            var result = Toon.Parse(source);
+
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsNotNull(result.Tokens, "Tokens should not be null even with errors");
+            Assert.IsNotEmpty(result.Tokens, "Tokens should not be empty even with errors");
+        }
+
+        [TestMethod]
+        public void TryParse_IncludesTokensInResult()
+        {
+            var source = "age: 30";
+            bool success = Toon.TryParse(source, out var result);
+
+            Assert.IsTrue(success);
+            Assert.IsNotNull(result.Tokens, "Tokens should not be null");
+            Assert.IsNotEmpty(result.Tokens, "Tokens should not be empty");
+        }
+
+        [TestMethod]
+        public void Parse_TokensMatchSourceStructure()
+        {
+            var source = @"name: John
+age: 30";
+            var result = Toon.Parse(source);
+
+            Assert.IsNotNull(result.Tokens);
+            
+            // Should have tokens for both properties
+            var identifiers = result.Tokens.Where(t => t.Type == TokenType.Identifier).ToList();
+            Assert.IsTrue(identifiers.Count >= 2, "Should have at least 2 identifiers (property keys)");
+            
+            var colons = result.Tokens.Where(t => t.Type == TokenType.Colon).ToList();
+            Assert.AreEqual(2, colons.Count, "Should have 2 colons");
+            
+            var numbers = result.Tokens.Where(t => t.Type == TokenType.Number).ToList();
+            Assert.AreEqual(1, numbers.Count, "Should have 1 number token (30)");
         }
     }
 }

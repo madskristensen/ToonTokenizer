@@ -13,9 +13,9 @@ namespace ToonTokenizerTest
         {
             var source = @"user:
   name: John";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var userProp = document.Properties[0];
+            var userProp = result.Document!.Properties[0];
             Assert.AreEqual("user", userProp.Key);
             Assert.IsInstanceOfType(userProp.Value, typeof(ObjectNode));
 
@@ -32,9 +32,9 @@ namespace ToonTokenizerTest
   name: John
   age: 30
   email: john@example.com";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var obj = (ObjectNode)document.Properties[0].Value;
+            var obj = (ObjectNode)result.Document!.Properties[0].Value;
             Assert.HasCount(3, obj.Properties);
             Assert.AreEqual("name", obj.Properties[0].Key);
             Assert.AreEqual("age", obj.Properties[1].Key);
@@ -48,9 +48,9 @@ namespace ToonTokenizerTest
   level2:
     level3:
       value: deep";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var level1 = (ObjectNode)document.Properties[0].Value;
+            var level1 = (ObjectNode)result.Document!.Properties[0].Value;
             var level2 = (ObjectNode)level1.Properties[0].Value;
             var level3 = (ObjectNode)level2.Properties[0].Value;
             var value = (StringValueNode)level3.Properties[0].Value;
@@ -66,9 +66,9 @@ namespace ToonTokenizerTest
   version: 1.0
   enabled: true
   timeout: null";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var obj = (ObjectNode)document.Properties[0].Value;
+            var obj = (ObjectNode)result.Document!.Properties[0].Value;
             Assert.HasCount(4, obj.Properties);
             Assert.IsInstanceOfType(obj.Properties[0].Value, typeof(StringValueNode));
             Assert.IsInstanceOfType(obj.Properties[1].Value, typeof(NumberValueNode));
@@ -85,11 +85,11 @@ namespace ToonTokenizerTest
 
 settings:
   theme: dark";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(2, document.Properties);
-            Assert.IsInstanceOfType(document.Properties[0].Value, typeof(ObjectNode));
-            Assert.IsInstanceOfType(document.Properties[1].Value, typeof(ObjectNode));
+            Assert.HasCount(2, result.Document!.Properties);
+            Assert.IsInstanceOfType(result.Document!.Properties[0].Value, typeof(ObjectNode));
+            Assert.IsInstanceOfType(result.Document!.Properties[1].Value, typeof(ObjectNode));
         }
 
         [TestMethod]
@@ -99,9 +99,9 @@ settings:
   profile:
     name: John
     age: 30";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var user = (ObjectNode)document.Properties[0].Value;
+            var user = (ObjectNode)result.Document!.Properties[0].Value;
             var profile = (ObjectNode)user.Properties[0].Value;
 
             Assert.HasCount(2, profile.Properties);
@@ -115,9 +115,9 @@ settings:
         public void Parse_EmptyArrayNotation_ParsesCorrectly()
         {
             var source = "items[0]:";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual(0, array.DeclaredSize);
         }
 
@@ -125,9 +125,9 @@ settings:
         public void Parse_SingleElementArray_ParsesCorrectly()
         {
             var source = "item[1]: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual(1, array.DeclaredSize);
             Assert.HasCount(1, array.Elements);
         }
@@ -136,9 +136,9 @@ settings:
         public void Parse_SimpleArray_ParsesCorrectly()
         {
             var source = "colors[3]: red,green,blue";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual(3, array.DeclaredSize);
             Assert.HasCount(3, array.Elements);
 
@@ -155,9 +155,9 @@ settings:
         public void Parse_ArrayWithNumbers_ParsesCorrectly()
         {
             var source = "numbers[5]: 1,2,3,4,5";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(5, array.Elements);
 
             for (int i = 0; i < 5; i++)
@@ -171,9 +171,9 @@ settings:
         public void Parse_ArrayWithMixedTypes_ParsesCorrectly()
         {
             var source = "mixed[4]: text,42,true,null";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(4, array.Elements);
             Assert.IsInstanceOfType(array.Elements[0], typeof(StringValueNode));
             Assert.IsInstanceOfType(array.Elements[1], typeof(NumberValueNode));
@@ -185,9 +185,9 @@ settings:
         public void Parse_ArrayWithQuotedStrings_ParsesCorrectly()
         {
             var source = "names[2]: \"John Doe\",\"Jane Smith\"";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             var name1 = (StringValueNode)array.Elements[0];
             var name2 = (StringValueNode)array.Elements[1];
 
@@ -199,9 +199,9 @@ settings:
         public void Parse_ArrayWithFloats_ParsesCorrectly()
         {
             var source = "values[3]: 1.5,2.7,3.14";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(3, array.Elements);
 
             var val1 = (NumberValueNode)array.Elements[0];
@@ -218,11 +218,11 @@ settings:
         {
             var source = @"arr1[2]: a,b
 arr2[3]: 1,2,3";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(2, document.Properties);
-            Assert.IsInstanceOfType(document.Properties[0].Value, typeof(ArrayNode));
-            Assert.IsInstanceOfType(document.Properties[1].Value, typeof(ArrayNode));
+            Assert.HasCount(2, result.Document!.Properties);
+            Assert.IsInstanceOfType(result.Document!.Properties[0].Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType(result.Document!.Properties[1].Value, typeof(ArrayNode));
         }
 
         #endregion
@@ -234,9 +234,9 @@ arr2[3]: 1,2,3";
         {
             var source = @"root:
   child: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var root = (ObjectNode)document.Properties[0].Value;
+            var root = (ObjectNode)result.Document!.Properties[0].Value;
             Assert.HasCount(1, root.Properties);
         }
 
@@ -245,9 +245,9 @@ arr2[3]: 1,2,3";
         {
             var source = @"root:
     child: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var root = (ObjectNode)document.Properties[0].Value;
+            var root = (ObjectNode)result.Document!.Properties[0].Value;
             Assert.HasCount(1, root.Properties);
         }
 
@@ -257,9 +257,9 @@ arr2[3]: 1,2,3";
             var source = @"level1:
   level2:
     level3: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var level1 = (ObjectNode)document.Properties[0].Value;
+            var level1 = (ObjectNode)result.Document!.Properties[0].Value;
             var level2 = (ObjectNode)level1.Properties[0].Value;
             Assert.HasCount(1, level2.Properties);
         }
@@ -273,9 +273,9 @@ arr2[3]: 1,2,3";
         {
             var source = @"data:
   items[3]: a,b,c";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var obj = (ObjectNode)document.Properties[0].Value;
+            var obj = (ObjectNode)result.Document!.Properties[0].Value;
             var array = (ArrayNode)obj.Properties[0].Value;
 
             Assert.HasCount(3, array.Elements);
@@ -290,9 +290,9 @@ arr2[3]: 1,2,3";
     colors[2]: red,blue
     flags:
       debug: true";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var app = (ObjectNode)document.Properties[0].Value;
+            var app = (ObjectNode)result.Document!.Properties[0].Value;
             Assert.HasCount(2, app.Properties);
 
             var settings = (ObjectNode)app.Properties[1].Value;
@@ -313,9 +313,9 @@ arr2[3]: 1,2,3";
     value: a
   child2:
     value: b";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var parent = (ObjectNode)document.Properties[0].Value;
+            var parent = (ObjectNode)result.Document!.Properties[0].Value;
             // Accept either 1 or 2 children depending on parser strictness
             Assert.IsGreaterThanOrEqualTo(1, parent.Properties.Count);
             Assert.AreEqual("child1", parent.Properties[0].Key);
@@ -330,12 +330,12 @@ arr2[3]: 1,2,3";
 array[2]: a,b
 object:
   nested: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(3, document.Properties);
-            Assert.IsInstanceOfType(document.Properties[0].Value, typeof(StringValueNode));
-            Assert.IsInstanceOfType(document.Properties[1].Value, typeof(ArrayNode));
-            Assert.IsInstanceOfType(document.Properties[2].Value, typeof(ObjectNode));
+            Assert.HasCount(3, result.Document!.Properties);
+            Assert.IsInstanceOfType(result.Document!.Properties[0].Value, typeof(StringValueNode));
+            Assert.IsInstanceOfType(result.Document!.Properties[1].Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType(result.Document!.Properties[2].Value, typeof(ObjectNode));
         }
 
         #endregion
@@ -346,18 +346,18 @@ object:
         public void Parse_PropertyKeyWithUnderscores_ParsesCorrectly()
         {
             var source = "snake_case_key: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.AreEqual("snake_case_key", document.Properties[0].Key);
+            Assert.AreEqual("snake_case_key", result.Document!.Properties[0].Key);
         }
 
         [TestMethod]
         public void Parse_PropertyKeyWithNumbers_ParsesCorrectly()
         {
             var source = "key123: value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.AreEqual("key123", document.Properties[0].Key);
+            Assert.AreEqual("key123", result.Document!.Properties[0].Key);
         }
 
         [TestMethod]
@@ -366,9 +366,9 @@ object:
             var source = @"prop1: value1
 
 prop2: value2";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(2, document.Properties);
+            Assert.HasCount(2, result.Document!.Properties);
         }
 
         #endregion

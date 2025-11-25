@@ -1,13 +1,51 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Nullable>enable</Nullable>
-	  <LangVersion>latest</LangVersion>
+    <LangVersion>latest</LangVersion>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>ToonTokenizer</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Mads Kristensen</Authors>
+    <Company>Mads Kristensen</Company>
+    <Description>Complete .NET library for parsing and tokenizing TOON (Token-Oriented Object Notation) - a compact, human-readable format optimized for LLM prompts. Includes full lexer, resilient parser, AST generation, position tracking, and extension methods for IDE integration.</Description>
+    <PackageTags>toon;parser;lexer;tokenizer;llm;ast;json;serialization;prompt-engineering</PackageTags>
+    <PackageProjectUrl>https://github.com/madskristensen/ToonTokenizer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/madskristensen/ToonTokenizer</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <Copyright>Copyright © 2025 Mads Kristensen</Copyright>
+    <PackageReleaseNotes>
+      Initial 1.0.0 release:
+      - Complete TOON v3.0 specification support
+      - Resilient parsing with error recovery
+      - Tokens included in parse results
+      - Rich error reporting with precise locations
+      - Extension methods for IDE integration
+      - Visitor pattern for AST traversal
+      - 230+ unit tests
+    </PackageReleaseNotes>
+    
+    <!-- Build Settings -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>
+

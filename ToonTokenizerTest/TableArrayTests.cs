@@ -12,9 +12,9 @@ namespace ToonTokenizerTest
             var source = @"users[2]{id,name}:
   1,Alice
   2,Bob";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual(2, table.DeclaredSize);
             Assert.HasCount(2, table.Schema);
             Assert.HasCount(2, table.Rows);
@@ -25,9 +25,9 @@ namespace ToonTokenizerTest
         {
             var source = @"data[1]{id,name,age}:
   1,John,30";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual("id", table.Schema[0]);
             Assert.AreEqual("name", table.Schema[1]);
             Assert.AreEqual("age", table.Schema[2]);
@@ -38,9 +38,9 @@ namespace ToonTokenizerTest
         {
             var source = @"users[1]{id,name}:
   1,Alice";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             var row = table.Rows[0];
 
             var id = (NumberValueNode)row[0];
@@ -57,9 +57,9 @@ namespace ToonTokenizerTest
   1,alpha
   2,beta
   3,gamma";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(3, table.Rows);
 
             for (int i = 0; i < 3; i++)
@@ -74,9 +74,9 @@ namespace ToonTokenizerTest
             var source = @"people[2]{id,name}:
   1,""John Doe""
   2,""Jane Smith""";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             var name1 = (StringValueNode)table.Rows[0][1];
             var name2 = (StringValueNode)table.Rows[1][1];
 
@@ -90,9 +90,9 @@ namespace ToonTokenizerTest
             var source = @"measurements[2]{id,value}:
   1,3.14
   2,2.718";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             var val1 = (NumberValueNode)table.Rows[0][1];
             var val2 = (NumberValueNode)table.Rows[1][1];
 
@@ -106,9 +106,9 @@ namespace ToonTokenizerTest
             var source = @"flags[2]{id,enabled}:
   1,true
   2,false";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             var flag1 = (BooleanValueNode)table.Rows[0][1];
             var flag2 = (BooleanValueNode)table.Rows[1][1];
 
@@ -122,9 +122,9 @@ namespace ToonTokenizerTest
             var source = @"data[2]{id,optional}:
   1,null
   2,value";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.IsInstanceOfType(table.Rows[0][1], typeof(NullValueNode));
             Assert.IsInstanceOfType(table.Rows[1][1], typeof(StringValueNode));
         }
@@ -135,9 +135,9 @@ namespace ToonTokenizerTest
             var source = @"mixed[2]{id,str,num,bool,nullVal}:
   1,text,42,true,null
   2,data,3.14,false,null";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(5, table.Schema);
             Assert.HasCount(2, table.Rows);
 
@@ -157,9 +157,9 @@ namespace ToonTokenizerTest
   alpha
   beta
   gamma";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(1, table.Schema);
             Assert.HasCount(3, table.Rows);
 
@@ -174,9 +174,9 @@ namespace ToonTokenizerTest
         {
             var source = @"data[1]{a,b,c,d,e,f}:
   1,2,3,4,5,6";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(6, table.Schema);
             Assert.HasCount(1, table.Rows);
             Assert.HasCount(6, table.Rows[0]);
@@ -190,8 +190,8 @@ namespace ToonTokenizerTest
   2,Ridge Overlook,9.2,540,luis,false
   3,Wildflower Loop,5.1,180,sam,true";
 
-            var document = Toon.Parse(source);
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var result = Toon.Parse(source);
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
 
             Assert.AreEqual(3, table.DeclaredSize);
             Assert.HasCount(6, table.Schema);
@@ -220,9 +220,9 @@ namespace ToonTokenizerTest
         {
             var source = @"data[1]{field1, field2, field3}:
   1,2,3";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(3, table.Schema);
         }
 
@@ -235,14 +235,14 @@ namespace ToonTokenizerTest
 
 table2[1]{x,y}:
   3,4";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            Assert.HasCount(2, document.Properties);
-            Assert.IsInstanceOfType(document.Properties[0].Value, typeof(TableArrayNode));
-            Assert.IsInstanceOfType(document.Properties[1].Value, typeof(TableArrayNode));
+            Assert.HasCount(2, result.Document!.Properties);
+            Assert.IsInstanceOfType(result.Document!.Properties[0].Value, typeof(TableArrayNode));
+            Assert.IsInstanceOfType(result.Document!.Properties[1].Value, typeof(TableArrayNode));
 
-            var table1 = (TableArrayNode)document.Properties[0].Value;
-            var table2 = (TableArrayNode)document.Properties[1].Value;
+            var table1 = (TableArrayNode)result.Document!.Properties[0].Value;
+            var table2 = (TableArrayNode)result.Document!.Properties[1].Value;
 
             Assert.HasCount(2, table1.Schema);
             Assert.HasCount(2, table2.Schema);
@@ -253,9 +253,9 @@ table2[1]{x,y}:
         {
             // Add a newline after the colon to ensure the parser sees the end of the table
             var source = "empty[0]{id,name}:\n";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual(0, table.DeclaredSize);
             Assert.HasCount(2, table.Schema);
             Assert.IsEmpty(table.Rows);
@@ -267,9 +267,9 @@ table2[1]{x,y}:
             var source = @"temps[2]{day,celsius}:
   1,-5
   2,-10";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             var temp1 = (NumberValueNode)table.Rows[0][1];
             var temp2 = (NumberValueNode)table.Rows[1][1];
 
@@ -282,9 +282,9 @@ table2[1]{x,y}:
         {
             var source = @"data[1]{id,value}:
   1,1.5e-10";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             var value = (NumberValueNode)table.Rows[0][1];
 
             Assert.AreEqual(1.5e-10, value.Value, 1e-15);
@@ -295,9 +295,9 @@ table2[1]{x,y}:
         {
             var source = @"data[1]{a,b,c,d,e,f,g,h,i,j}:
   1,2,3,4,5,6,7,8,9,10";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.HasCount(10, table.Schema);
             Assert.HasCount(10, table.Rows[0]);
 
@@ -316,9 +316,9 @@ table2[1]{x,y}:
   data[2]{id,value}:
     1,alpha
     2,beta";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var root = (ObjectNode)document.Properties[0].Value;
+            var root = (ObjectNode)result.Document!.Properties[0].Value;
             var table = (TableArrayNode)root.Properties[0].Value;
 
             Assert.HasCount(2, table.Rows);

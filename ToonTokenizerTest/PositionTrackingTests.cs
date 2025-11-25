@@ -96,9 +96,9 @@ prop3: val3";
         public void AstNode_HasCorrectStartPosition()
         {
             var source = "name: John";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.IsGreaterThan(0, property.StartLine);
             Assert.IsGreaterThan(0, property.StartColumn);
             Assert.IsGreaterThanOrEqualTo(0, property.StartPosition);
@@ -108,9 +108,9 @@ prop3: val3";
         public void AstNode_HasCorrectEndPosition()
         {
             var source = "name: John";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var property = document.Properties[0];
+            var property = result.Document!.Properties[0];
             Assert.IsGreaterThan(0, property.EndLine);
             Assert.IsGreaterThan(0, property.EndColumn);
             Assert.IsGreaterThanOrEqualTo(property.StartPosition, property.EndPosition);
@@ -121,9 +121,9 @@ prop3: val3";
         {
             var source = @"user:
   name: John";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var userProp = document.Properties[0];
+            var userProp = result.Document!.Properties[0];
             var userObj = (ObjectNode)userProp.Value;
             var nameProp = userObj.Properties[0];
 
@@ -135,9 +135,9 @@ prop3: val3";
         public void ValueNode_HasCorrectPosition()
         {
             var source = "count: 42";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var value = (NumberValueNode)document.Properties[0].Value;
+            var value = (NumberValueNode)result.Document!.Properties[0].Value;
             Assert.IsGreaterThan(0, value.StartLine);
             Assert.IsGreaterThan(0, value.StartColumn);
             Assert.IsGreaterThanOrEqualTo(0, value.StartPosition);
@@ -147,9 +147,9 @@ prop3: val3";
         public void ArrayNode_HasCorrectPosition()
         {
             var source = "items[3]: a,b,c";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var array = (ArrayNode)document.Properties[0].Value;
+            var array = (ArrayNode)result.Document!.Properties[0].Value;
             Assert.IsGreaterThan(0, array.StartLine);
             Assert.IsGreaterThanOrEqualTo(0, array.StartPosition);
         }
@@ -160,9 +160,9 @@ prop3: val3";
             var source = @"data[2]{id,name}:
   1,Alice
   2,Bob";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
-            var table = (TableArrayNode)document.Properties[0].Value;
+            var table = (TableArrayNode)result.Document!.Properties[0].Value;
             Assert.AreEqual(1, table.StartLine);
             Assert.IsGreaterThanOrEqualTo(table.StartLine, table.EndLine);
         }
@@ -283,11 +283,11 @@ line3: value3";
         {
             var source = @"name: John
 age: 30";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
             // Document should span from first to last property
-            Assert.AreEqual(1, document.StartLine);
-            Assert.AreEqual(2, document.EndLine);
+            Assert.AreEqual(1, result.Document!.StartLine);
+            Assert.AreEqual(2, result.Document!.EndLine);
         }
 
         [TestMethod]
@@ -297,10 +297,10 @@ age: 30";
   array[2]: a,b
   table[1]{x,y}:
     1,2";
-            var document = Toon.Parse(source);
+            var result = Toon.Parse(source);
 
             // Recursively check all nodes have positions
-            CheckNodePositions(document);
+            CheckNodePositions(result.Document!);
         }
 
         private void CheckNodePositions(AstNode node)

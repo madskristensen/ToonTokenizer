@@ -158,12 +158,12 @@ namespace ToonTokenizerTest
         {
             var json = @"{""name"":""Test"",""value"":42,""active"":true}";
             var toon = Toon.Encode(json);
-            var document = Toon.Parse(toon);
+            var result = Toon.Parse(toon);
 
-            Assert.HasCount(3, document.Properties);
-            Assert.AreEqual("name", document.Properties[0].Key);
-            Assert.AreEqual("value", document.Properties[1].Key);
-            Assert.AreEqual("active", document.Properties[2].Key);
+            Assert.HasCount(3, result.Document!.Properties);
+            Assert.AreEqual("name", result.Document!.Properties[0].Key);
+            Assert.AreEqual("value", result.Document!.Properties[1].Key);
+            Assert.AreEqual("active", result.Document!.Properties[2].Key);
         }
     }
 }

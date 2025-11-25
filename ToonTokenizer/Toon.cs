@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-using ToonTokenizer.Ast;
-
 namespace ToonTokenizer
 {
     /// <summary>
@@ -11,32 +9,68 @@ namespace ToonTokenizer
     public class Toon
     {
         /// <summary>
-        /// Parses TOON source text and returns an AST.
+        /// Parses TOON source text and returns a parse result containing the AST and any errors.
+        /// The parser is resilient and will continue parsing after errors, returning a partial AST.
         /// </summary>
         /// <param name="source">The TOON source text to parse.</param>
-        /// <returns>A ToonDocument representing the parsed AST.</returns>
-        public static ToonDocument Parse(string source)
+        /// <returns>A ToonParseResult containing the parsed document (possibly partial) and any errors.</returns>
+        public static ToonParseResult Parse(string source)
         {
             if (source == null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
-            var lexer = new ToonLexer(source);
-            var tokens = lexer.Tokenize();
-            // Debug helper: when parsing specific failing cases, emit tokens to stderr
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return ToonParseResult.Failure(new ToonError("Source text cannot be null or empty", 0, 0, 0, 0));
+            }
+
             try
             {
-                if (source != null && source.Contains("items[3]{value}"))
+                ToonLexer lexer = new(source);
+                var tokens = lexer.Tokenize();
+                // Debug helper: when parsing specific failing cases, emit tokens to stderr
+                try
                 {
-                    foreach (var t in tokens)
+                    if (source != null && source.Contains("items[3]{value}"))
                     {
-                        System.Console.Error.WriteLine($"TOK: {t.Type} '{t.Value}' (line {t.Line}, col {t.Column})");
+                        foreach (var t in tokens)
+                        {
+                            System.Console.Error.WriteLine($"TOK: {t.Type} '{t.Value}' (line {t.Line}, col {t.Column})");
+                        }
                     }
                 }
-            }
-            catch { }
+                catch { }
 
-            var parser = new ToonParser(tokens);
-            return parser.Parse();
+                ToonParser parser = new(tokens);
+                var document = parser.Parse();
+                
+                // If there are errors, return partial result
+                if (parser.Errors.Count > 0)
+                {
+                    return ToonParseResult.Partial(document, parser.Errors, tokens);
+                }
+                
+                // If document is empty (no properties), return failure
+                // This handles empty strings, whitespace-only, and comments-only documents
+                if (document.Properties.Count == 0)
+                {
+                    return ToonParseResult.Failure(new ToonError("Source text cannot be null or empty", 0, 0, 0, 0), tokens);
+                }
+                
+                return ToonParseResult.Success(document, tokens);
+            }
+            catch (ParseException)
+            {
+                // Re-throw ParseException (from lexer for invalid escapes) to caller
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // For unexpected exceptions, return empty document with error
+                return ToonParseResult.Failure(new ToonError($"Unexpected error: {ex.Message}", 0, 0, 0, 0));
+            }
         }
 
         /// <summary>
@@ -58,11 +92,16 @@ namespace ToonTokenizer
         public static string Encode(string json, ToonEncoderOptions options)
         {
             if (json == null)
+            {
                 throw new ArgumentNullException(nameof(json));
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
+            }
 
-            var encoder = new ToonEncoder(options);
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            ToonEncoder encoder = new(options);
             return encoder.EncodeFromJson(json);
         }
 
@@ -74,41 +113,40 @@ namespace ToonTokenizer
         public static List<Token> Tokenize(string source)
         {
             if (source == null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
-            var lexer = new ToonLexer(source);
+            ToonLexer lexer = new(source);
             return lexer.Tokenize();
         }
 
         /// <summary>
-        /// Validates TOON source text and returns any errors with span information.
+        /// Validates TOON source text and returns the parse result with errors.
+        /// Returns true if parsing completed (even with errors), false only on catastrophic failures.
+        /// This allows language services to get partial results and all errors.
         /// </summary>
         /// <param name="source">The TOON source text to validate.</param>
-        /// <param name="errors">Output parameter for validation errors with position and length information.</param>
-        /// <returns>True if valid, false otherwise.</returns>
-        public static bool TryParse(string source, out List<ToonError> errors)
+        /// <param name="result">Output parameter for the parse result containing document and errors.</param>
+        /// <returns>True if parsing completed, false only on catastrophic exceptions.</returns>
+        public static bool TryParse(string source, out ToonParseResult result)
         {
-            errors = [];
-
             if (string.IsNullOrWhiteSpace(source))
             {
-                errors.Add(new ToonError("Source text cannot be null or empty", 0, 0, 0, 0));
+                result = ToonParseResult.Failure(new ToonError("Source text cannot be null or empty", 0, 0, 0, 0));
                 return false;
             }
 
             try
             {
-                var document = Parse(source);
+                result = Parse(source);
+                // Return true even if there are parse errors - we still have a partial document
+                // Only return false for catastrophic failures (exceptions)
                 return true;
-            }
-            catch (ParseException ex)
-            {
-                errors.Add(new ToonError(ex.Message, ex.Position, ex.Length, ex.Line, ex.Column));
-                return false;
             }
             catch (Exception ex)
             {
-                errors.Add(new ToonError($"Unexpected error: {ex.Message}", 0, 0, 0, 0));
+                result = ToonParseResult.Failure(new ToonError($"Catastrophic error: {ex.Message}", 0, 0, 0, 0));
                 return false;
             }
         }
