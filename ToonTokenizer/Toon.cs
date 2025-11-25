@@ -46,10 +46,14 @@ namespace ToonTokenizer
                 ToonParser parser = new(tokens);
                 var document = parser.Parse();
                 
+                // Combine lexer and parser errors
+                var allErrors = new List<ToonError>(lexer.Errors);
+                allErrors.AddRange(parser.Errors);
+                
                 // If there are errors, return partial result
-                if (parser.Errors.Count > 0)
+                if (allErrors.Count > 0)
                 {
-                    return ToonParseResult.Partial(document, parser.Errors, tokens);
+                    return ToonParseResult.Partial(document, allErrors, tokens);
                 }
                 
                 // If document is empty (no properties), return failure
@@ -140,8 +144,14 @@ namespace ToonTokenizer
             try
             {
                 result = Parse(source);
+                // Ensure result is never null
+                if (result == null)
+                {
+                    result = ToonParseResult.Failure(new ToonError("Unknown error: Parse returned null", 0, 0, 0, 0));
+                    return false;
+                }
                 // Return true even if there are parse errors - we still have a partial document
-                // Only return false for catastrophic failures (exceptions)
+                // TryParse only returns false for catastrophic failures (unexpected exceptions)
                 return true;
             }
             catch (Exception ex)
@@ -152,3 +162,4 @@ namespace ToonTokenizer
         }
     }
 }
+

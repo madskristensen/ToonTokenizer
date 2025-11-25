@@ -10,23 +10,26 @@ namespace ToonTokenizerTest
     public class QuoteValidationTests
     {
         [TestMethod]
-        public void Parse_UnterminatedDoubleQuotedString_ThrowsParseException()
+        public void Parse_UnterminatedDoubleQuotedString_ReturnsError()
         {
             // Spec §7.1: "Decoders MUST reject ... unterminated strings"
+            // With resilient parsing, this returns an error in the result
             var source = "name: \"John";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Unterminated string", result.Errors[0].Message);
         }
 
         [TestMethod]
-        public void Parse_UnterminatedSingleQuotedString_ThrowsParseException()
+        public void Parse_UnterminatedSingleQuotedString_ReturnsError()
         {
             // Spec §7.1: "Decoders MUST reject ... unterminated strings"
             var source = "name: 'John";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Unterminated string", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -83,44 +86,49 @@ namespace ToonTokenizerTest
         }
 
         [TestMethod]
-        public void Parse_StringWithInvalidEscape_ThrowsParseException()
+        public void Parse_StringWithInvalidEscape_ReturnsError()
         {
             // Spec §7.1: "Decoders MUST reject any other escape sequence"
+            // With resilient parsing, invalid escapes are included literally and an error is recorded
             var source = "text: \"Hello\\xWorld\"";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Invalid escape sequence", exception.Message);
-            Assert.Contains("\\x", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
+            Assert.Contains("\\x", result.Errors[0].Message);
         }
 
         [TestMethod]
-        public void Parse_StringWithInvalidEscapeU_ThrowsParseException()
+        public void Parse_StringWithInvalidEscapeU_ReturnsError()
         {
             // Spec §7.1: \u is not a valid escape sequence
             var source = "text: \"Unicode\\u0041\"";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Invalid escape sequence", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
         }
 
         [TestMethod]
-        public void Parse_StringWithInvalidEscapeF_ThrowsParseException()
+        public void Parse_StringWithInvalidEscapeF_ReturnsError()
         {
             // Spec §7.1: \f is not a valid escape sequence
             var source = "text: \"Form\\fFeed\"";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Invalid escape sequence", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
         }
 
         [TestMethod]
-        public void Parse_StringWithInvalidEscapeB_ThrowsParseException()
+        public void Parse_StringWithInvalidEscapeB_ReturnsError()
         {
             // Spec §7.1: \b is not a valid escape sequence
             var source = "text: \"Back\\bspace\"";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Invalid escape sequence", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -128,12 +136,13 @@ namespace ToonTokenizerTest
         {
             // Per spec §7.2: unquoted strings cannot contain double quotes
             // If a bare quote appears, the lexer will try to parse it as a quoted string
-            // Since it's unterminated, it will throw
+            // Since it's unterminated, it will return an error
             var source = "value: hello\"world";
             
             // The bare quote in the middle triggers unterminated string error
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Unterminated string", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -161,35 +170,38 @@ namespace ToonTokenizerTest
         }
 
         [TestMethod]
-        public void Parse_MultilineUnterminatedString_ThrowsParseException()
+        public void Parse_MultilineUnterminatedString_ReturnsError()
         {
             // Unterminated string that spans multiple lines (hits EOF)
             var source = @"name: ""John
 age: 30";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Unterminated string", result.Errors[0].Message);
         }
 
         [TestMethod]
-        public void Parse_UnterminatedStringInArrayValue_ThrowsParseException()
+        public void Parse_UnterminatedStringInArrayValue_ReturnsError()
         {
             // Unterminated string in an array context
             var source = "items[2]: \"value1,value2";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Unterminated string", result.Errors[0].Message);
         }
 
         [TestMethod]
-        public void Parse_UnterminatedStringInTableArrayCell_ThrowsParseException()
+        public void Parse_UnterminatedStringInTableArrayCell_ReturnsError()
         {
             // Unterminated string in table array cell
             var source = @"data[1]{id,name}:
   1,""Alice";
             
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var result = Toon.Parse(source);
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Unterminated string", result.Errors[0].Message);
         }
 
         [TestMethod]

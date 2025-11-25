@@ -22,7 +22,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Icon.png</PackageIcon>
     <Copyright>Copyright © 2025 Mads Kristensen</Copyright>
-    <PackageReleaseNotes>v1.0.0: Initial release with full TOON v3.0 spec compliance, unterminated string validation, and comprehensive quote handling.</PackageReleaseNotes>
     
     <!-- Build Settings -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -36,6 +35,8 @@
     <!-- Package Validation -->
     <EnablePackageValidation>true</EnablePackageValidation>
     <GenerateCompatibilitySuppressionFile>true</GenerateCompatibilitySuppressionFile>
+    <AssemblyTitle>Toon Tokenizer</AssemblyTitle>
+    <Title>Toon Tokenizer</Title>
   </PropertyGroup>
 
   <ItemGroup>

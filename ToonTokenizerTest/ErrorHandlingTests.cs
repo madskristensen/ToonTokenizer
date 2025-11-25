@@ -184,13 +184,17 @@ age: 30
         }
 
         [TestMethod]
-        public void Parse_UnclosedQuotedString_ThrowsParseException()
+        public void Parse_UnclosedQuotedString_ReturnsError()
         {
             // Spec §7.1: Decoders MUST reject unterminated strings
+            // With resilient parsing, lexer records error and continues
             var source = "name: \"John";
 
-            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Tokenize(source));
-            Assert.Contains("Unterminated string", exception.Message);
+            var lexer = new ToonLexer(source);
+            var tokens = lexer.Tokenize();
+            
+            Assert.IsNotEmpty(lexer.Errors, "Lexer should have errors");
+            Assert.Contains("Unterminated string", lexer.Errors[0].Message);
         }
 
         [TestMethod]

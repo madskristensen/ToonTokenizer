@@ -893,7 +893,8 @@ namespace ToonTokenizer
                                   CurrentToken.Type == TokenType.Newline ||
                                   CurrentToken.Type == TokenType.Comment ||
                                   CurrentToken.Type == TokenType.Indent ||
-                                  CurrentToken.Type == TokenType.Dedent))
+                                  CurrentToken.Type == TokenType.Dedent ||
+                                  CurrentToken.Type == TokenType.Invalid))
             {
                 Advance();
             }

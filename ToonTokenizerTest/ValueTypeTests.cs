@@ -293,10 +293,13 @@ nullVal: null";
         }
 
         [TestMethod]
-        public void Parse_StringValue_InvalidEscape_ThrowsParseException()
+        public void Parse_StringValue_InvalidEscape_ReturnsError()
         {
             var source = "text: \"Hello\\xWorld\"";
-            Assert.ThrowsExactly<ParseException>(() => Toon.Parse(source));
+            var result = Toon.Parse(source);
+            
+            Assert.IsTrue(result.HasErrors, "Should have errors");
+            Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
         }
     }
 }

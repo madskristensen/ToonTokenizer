@@ -15,6 +15,7 @@ namespace ToonTokenizer
         private int _column;
         private int _lineStartPosition;
         private readonly Stack<int> _indentStack;
+        private readonly List<ToonError> _errors;
 
         public ToonLexer(string source)
         {
@@ -25,7 +26,13 @@ namespace ToonTokenizer
             _lineStartPosition = 0;
             _indentStack = new Stack<int>();
             _indentStack.Push(0);
+            _errors = new List<ToonError>();
         }
+
+        /// <summary>
+        /// Gets the list of errors encountered during tokenization.
+        /// </summary>
+        public List<ToonError> Errors => _errors;
 
         /// <summary>
         /// Tokenizes the entire source and returns all tokens.
@@ -245,6 +252,12 @@ namespace ToonTokenizer
 
             while (_position < _source.Length && _source[_position] != quote)
             {
+                // Stop at newlines for unterminated strings (better error recovery)
+                if (_source[_position] == '\n' || _source[_position] == '\r')
+                {
+                    break;
+                }
+
                 if (_source[_position] == '\\' && _position + 1 < _source.Length)
                 {
                     _position++;
@@ -262,10 +275,29 @@ namespace ToonTokenizer
                             if (quote == '\'')
                                 sb.Append('\'');
                             else
-                                throw new ParseException($"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}");
+                            {
+                                // Invalid escape - record error and include literal characters
+                                _errors.Add(new ToonError(
+                                    $"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}",
+                                    _position - 1,
+                                    2,
+                                    _line,
+                                    _column - 1));
+                                sb.Append('\\');
+                                sb.Append(escaped);
+                            }
                             break;
                         default:
-                            throw new ParseException($"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}");
+                            // Invalid escape - record error and include literal characters
+                            _errors.Add(new ToonError(
+                                $"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}",
+                                _position - 1,
+                                2,
+                                _line,
+                                _column - 1));
+                            sb.Append('\\');
+                            sb.Append(escaped);
+                            break;
                     }
                 }
                 else
@@ -278,9 +310,23 @@ namespace ToonTokenizer
             }
 
             // Check for unterminated string (spec §7.1: decoders MUST reject unterminated strings)
-            if (_position >= _source.Length)
+            // For resilient parsing, record error and continue to next line
+            if (_position >= _source.Length || _source[_position] != quote)
             {
-                throw new ParseException($"Unterminated string starting at line {_line}, column {startColumn}");
+                // String was not properly closed (hit EOF or newline)
+                int endPos = _position;
+                string reason = _position >= _source.Length ? "end of file" : "newline";
+                
+                // Record error but continue parsing
+                _errors.Add(new ToonError(
+                    $"Unterminated string starting at line {_line}, column {startColumn} (reached {reason})",
+                    start,
+                    endPos - start,
+                    _line,
+                    startColumn));
+                
+                // Return what we have so far as an invalid token
+                return new Token(TokenType.Invalid, quote + sb.ToString(), _line, startColumn, start, endPos - start);
             }
 
             if (_position < _source.Length)
