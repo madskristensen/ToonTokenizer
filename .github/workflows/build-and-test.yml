@@ -3,6 +3,7 @@ name: Build and Test
 permissions:
   actions: write
   contents: write
+  packages: write
 
 on:
   push:
@@ -31,6 +32,9 @@ jobs:
     - name: Build solution
       run: dotnet build --configuration Release --no-restore
       
+    - name: Verify package
+      run: dotnet pack ToonTokenizer/ToonTokenizer.csproj --configuration Release --no-build -p:ContinuousIntegrationBuild=true /p:PackageValidationBaselineVersion=1.0.0
+      
     - name: Run tests
       run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
       
@@ -40,3 +44,29 @@ jobs:
       with:
         name: test-results
         path: '**/test-results.trx'
+    
+    - name: Check if release commit
+      id: check_release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+      run: |
+        if echo "${{ github.event.head_commit.message }}" | grep -q "\[release\]"; then
+          echo "should_release=true" >> $GITHUB_OUTPUT
+        else
+          echo "should_release=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Pack NuGet package
+      if: steps.check_release.outputs.should_release == 'true'
+      run: dotnet pack ToonTokenizer/ToonTokenizer.csproj --configuration Release --no-build --output ./nupkg
+    
+    - name: Publish to NuGet.org
+      if: steps.check_release.outputs.should_release == 'true'
+      run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+    
+    - name: Upload NuGet artifacts
+      if: steps.check_release.outputs.should_release == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./nupkg/*.nupkg
+
