@@ -90,9 +90,9 @@ namespace ToonTokenizer
         {
             errors = [];
 
-            if (source == null)
+            if (string.IsNullOrWhiteSpace(source))
             {
-                errors.Add(new ToonError("Source text cannot be null", 0, 0, 0, 0));
+                errors.Add(new ToonError("Source text cannot be null or empty", 0, 0, 0, 0));
                 return false;
             }
 
