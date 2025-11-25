@@ -59,7 +59,7 @@ namespace ToonTokenizer
         /// <summary>
         /// Creates a successful parse result with a document and no errors.
         /// </summary>
-        public static ToonParseResult Success(ToonDocument document, List<Token> tokens = null)
+        public static ToonParseResult Success(ToonDocument document, List<Token>? tokens = null)
         {
             return new ToonParseResult
             {
@@ -73,7 +73,7 @@ namespace ToonTokenizer
         /// Creates a parse result with both a partial document and errors.
         /// Used for resilient parsing where errors don't stop the parse.
         /// </summary>
-        public static ToonParseResult Partial(ToonDocument document, List<ToonError> errors, List<Token> tokens = null)
+        public static ToonParseResult Partial(ToonDocument document, List<ToonError> errors, List<Token>? tokens = null)
         {
             return new ToonParseResult
             {
@@ -87,7 +87,7 @@ namespace ToonTokenizer
         /// Creates a failed parse result with errors and an empty document.
         /// Used only for catastrophic failures.
         /// </summary>
-        public static ToonParseResult Failure(List<ToonError> errors, List<Token> tokens = null)
+        public static ToonParseResult Failure(List<ToonError> errors, List<Token>? tokens = null)
         {
             return new ToonParseResult
             {
@@ -101,7 +101,7 @@ namespace ToonTokenizer
         /// Creates a failed parse result with a single error and an empty document.
         /// Used only for catastrophic failures.
         /// </summary>
-        public static ToonParseResult Failure(ToonError error, List<Token> tokens = null)
+        public static ToonParseResult Failure(ToonError error, List<Token>? tokens = null)
         {
             return new ToonParseResult
             {
