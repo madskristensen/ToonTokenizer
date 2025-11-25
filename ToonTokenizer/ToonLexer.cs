@@ -257,7 +257,13 @@ namespace ToonTokenizer
                         case 't': sb.Append('\t'); break;
                         case '\\': sb.Append('\\'); break;
                         case '"': sb.Append('"'); break;
-                        // Only allow \", \\, \n, \r, \t per Toon spec (no \\')
+                        case '\'': 
+                            // Single quotes can be escaped within single-quoted strings
+                            if (quote == '\'')
+                                sb.Append('\'');
+                            else
+                                throw new ParseException($"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}");
+                            break;
                         default:
                             throw new ParseException($"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}");
                     }
@@ -269,6 +275,12 @@ namespace ToonTokenizer
 
                 _position++;
                 _column++;
+            }
+
+            // Check for unterminated string (spec §7.1: decoders MUST reject unterminated strings)
+            if (_position >= _source.Length)
+            {
+                throw new ParseException($"Unterminated string starting at line {_line}, column {startColumn}");
             }
 
             if (_position < _source.Length)

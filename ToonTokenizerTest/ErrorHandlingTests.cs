@@ -184,13 +184,13 @@ age: 30
         }
 
         [TestMethod]
-        public void Parse_UnclosedQuotedString_HandlesGracefully()
+        public void Parse_UnclosedQuotedString_ThrowsParseException()
         {
+            // Spec §7.1: Decoders MUST reject unterminated strings
             var source = "name: \"John";
 
-            // The lexer should handle this by consuming until end of line
-            var tokens = Toon.Tokenize(source);
-            Assert.IsNotEmpty(tokens);
+            var exception = Assert.ThrowsExactly<ParseException>(() => Toon.Tokenize(source));
+            Assert.Contains("Unterminated string", exception.Message);
         }
 
         [TestMethod]
