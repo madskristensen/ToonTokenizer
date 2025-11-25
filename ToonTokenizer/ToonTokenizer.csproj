@@ -20,7 +20,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
+    <PackageIcon>Icon.png</PackageIcon>
     <Copyright>Copyright © 2025 Mads Kristensen</Copyright>
     <PackageReleaseNotes>v1.0.0: Initial release with full TOON v3.0 spec compliance, unterminated string validation, and comprehensive quote handling.</PackageReleaseNotes>
     
