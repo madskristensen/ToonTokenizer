@@ -31,17 +31,25 @@ namespace ToonTokenizer
 
         /// <summary>
         /// Encodes a JSON string to TOON format.
+        /// Supports JSONC (JSON with comments) by ignoring both single-line (//) and multi-line (/* */) comments.
         /// </summary>
-        /// <param name="json">The JSON string to convert.</param>
+        /// <param name="json">The JSON string to convert (supports JSONC with comments).</param>
         /// <returns>A TOON formatted string.</returns>
         public string EncodeFromJson(string json)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
 
-            using var document = JsonDocument.Parse(json);
+            // Configure options to support JSONC (JSON with comments)
+            var options = new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip,  // Ignore comments
+                AllowTrailingCommas = true                    // Allow trailing commas
+            };
+
+            using var document = JsonDocument.Parse(json, options);
             var sb = new StringBuilder();
-            
+
             if (document.RootElement.ValueKind == JsonValueKind.Object)
             {
                 EncodeObject(document.RootElement, sb, 0, _options.Delimiter);
@@ -70,9 +78,9 @@ namespace ToonTokenizer
             {
                 WriteIndent(sb, indentLevel);
                 sb.Append(EscapeKey(property.Name));
-                
+
                 var value = property.Value;
-                
+
                 if (value.ValueKind == JsonValueKind.Object)
                 {
                     sb.Append(":\n");
@@ -81,9 +89,9 @@ namespace ToonTokenizer
                 else if (value.ValueKind == JsonValueKind.Array)
                 {
                     int arrayLength = value.GetArrayLength();
-                    
+
                     // Check if this can be encoded as a table array
-                    if (_options.UseTableArrays && TryEncodeAsTableArray(property.Name, value, sb, indentLevel, activeDelimiter))
+                    if (_options.UseTableArrays && TryEncodeAsTableArray(value, sb, indentLevel, activeDelimiter))
                     {
                         // Successfully encoded as table array
                     }
@@ -115,7 +123,7 @@ namespace ToonTokenizer
             }
         }
 
-        private bool TryEncodeAsTableArray(string propertyName, JsonElement array, StringBuilder sb, int indentLevel, string activeDelimiter)
+        private bool TryEncodeAsTableArray(JsonElement array, StringBuilder sb, int indentLevel, string activeDelimiter)
         {
             if (array.GetArrayLength() == 0)
                 return false;
@@ -173,7 +181,7 @@ namespace ToonTokenizer
             {
                 WriteIndent(sb, indentLevel);
                 sb.Append("- ");
-                
+
                 if (element.ValueKind == JsonValueKind.Object)
                 {
                     // §10 v3.0: Place first field on hyphen line
@@ -187,7 +195,7 @@ namespace ToonTokenizer
                     else
                     {
                         var firstProp = props[0];
-                        
+
                         // Check if first field is a tabular array
                         if (firstProp.Value.ValueKind == JsonValueKind.Array &&
                             _options.UseTableArrays &&
@@ -203,7 +211,7 @@ namespace ToonTokenizer
                             sb.Append("]{");
                             sb.Append(string.Join(",", schema.Select(EscapeKey)));
                             sb.Append("}:\n");
-                            
+
                             // Rows at depth +2
                             foreach (var rowElement in firstProp.Value.EnumerateArray())
                             {
@@ -212,7 +220,7 @@ namespace ToonTokenizer
                                 sb.Append(string.Join(",", values));
                                 sb.Append('\n');
                             }
-                            
+
                             // Other fields at depth +1
                             for (int i = 1; i < props.Count; i++)
                             {
@@ -226,7 +234,7 @@ namespace ToonTokenizer
                                 }
                                 else if (value.ValueKind == JsonValueKind.Array)
                                 {
-                                    EncodePropertyArray(props[i].Name, value, sb, indentLevel + 1, activeDelimiter);
+                                    EncodePropertyArray(value, sb, indentLevel + 1, activeDelimiter);
                                 }
                                 else
                                 {
@@ -248,7 +256,7 @@ namespace ToonTokenizer
                             }
                             else if (value.ValueKind == JsonValueKind.Array)
                             {
-                                EncodePropertyArray(firstProp.Name, value, sb, indentLevel, activeDelimiter);
+                                EncodePropertyArray(value, sb, indentLevel, activeDelimiter);
                             }
                             else
                             {
@@ -256,7 +264,7 @@ namespace ToonTokenizer
                                 EncodeValue(value, sb, _options.Delimiter);
                                 sb.Append('\n');
                             }
-                            
+
                             // Other fields at depth +1
                             for (int i = 1; i < props.Count; i++)
                             {
@@ -270,7 +278,7 @@ namespace ToonTokenizer
                                 }
                                 else if (value.ValueKind == JsonValueKind.Array)
                                 {
-                                    EncodePropertyArray(props[i].Name, value, sb, indentLevel + 1, activeDelimiter);
+                                    EncodePropertyArray(value, sb, indentLevel + 1, activeDelimiter);
                                 }
                                 else
                                 {
@@ -343,11 +351,11 @@ namespace ToonTokenizer
             return true;
         }
 
-        private void EncodePropertyArray(string propertyName, JsonElement value, StringBuilder sb, int indentLevel, string activeDelimiter)
+        private void EncodePropertyArray(JsonElement value, StringBuilder sb, int indentLevel, string activeDelimiter)
         {
             int arrayLength = value.GetArrayLength();
-            
-            if (_options.UseTableArrays && TryEncodeAsTableArray(propertyName, value, sb, indentLevel, activeDelimiter))
+
+            if (_options.UseTableArrays && TryEncodeAsTableArray(value, sb, indentLevel, activeDelimiter))
             {
                 // Successfully encoded as table array
             }
@@ -424,19 +432,19 @@ namespace ToonTokenizer
                 // Normalize -0 to 0
                 return longValue == 0 ? "0" : longValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
             }
-            
+
             double doubleValue = element.GetDouble();
-            
+
             // Normalize -0 to 0
             if (doubleValue == 0)
                 return "0";
-            
+
             // Use Decimal for precise formatting without exponents
             try
             {
                 decimal decimalValue = (decimal)doubleValue;
                 string result = decimalValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                
+
                 // Remove trailing zeros in fractional part
                 if (result.Contains("."))
                 {
@@ -444,14 +452,14 @@ namespace ToonTokenizer
                     if (result.EndsWith("."))
                         result = result.TrimEnd('.');
                 }
-                
+
                 return result;
             }
             catch (OverflowException)
             {
                 // If out of decimal range, use "R" format and manually expand exponent
                 string result = doubleValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                
+
                 // Check for exponent notation and expand it
                 if (result.Contains("E") || result.Contains("e"))
                 {
@@ -464,7 +472,7 @@ namespace ToonTokenizer
                         result = parsed.ToString("0.###################", System.Globalization.CultureInfo.InvariantCulture);
                     }
                 }
-                
+
                 // Remove trailing zeros
                 if (result.Contains("."))
                 {
@@ -472,7 +480,7 @@ namespace ToonTokenizer
                     if (result.EndsWith("."))
                         result = result.TrimEnd('.');
                 }
-                
+
                 return result;
             }
         }
@@ -512,7 +520,7 @@ namespace ToonTokenizer
 
             // Numeric-like patterns (§7.2)
             // Matches: /^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i or /^0\d+$/
-            if (Regex.IsMatch(value, @"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$") || 
+            if (Regex.IsMatch(value, @"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$") ||
                 Regex.IsMatch(value, @"^0\d+$"))
                 return true;
 

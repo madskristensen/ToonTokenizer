@@ -26,7 +26,7 @@ namespace ToonTokenizer
             _lineStartPosition = 0;
             _indentStack = new Stack<int>();
             _indentStack.Push(0);
-            _errors = new List<ToonError>();
+            _errors = [];
         }
 
         /// <summary>
@@ -316,7 +316,7 @@ namespace ToonTokenizer
                 // String was not properly closed (hit EOF or newline)
                 int endPos = _position;
                 string reason = _position >= _source.Length ? "end of file" : "newline";
-                
+
                 // Record error but continue parsing
                 _errors.Add(new ToonError(
                     $"Unterminated string starting at line {_line}, column {startColumn} (reached {reason})",
@@ -324,7 +324,7 @@ namespace ToonTokenizer
                     endPos - start,
                     _line,
                     startColumn));
-                
+
                 // Return what we have so far as an invalid token
                 return new Token(TokenType.Invalid, quote + sb.ToString(), _line, startColumn, start, endPos - start);
             }

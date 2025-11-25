@@ -800,8 +800,8 @@ namespace ToonTokenizer
             if (_delimiterStack.Count == 1) // Only document delimiter (not in an array)
             {
                 var valueTokens = new List<Token>();
-                while (!IsAtEnd() && 
-                       CurrentToken.Type != TokenType.Newline && 
+                while (!IsAtEnd() &&
+                       CurrentToken.Type != TokenType.Newline &&
                        CurrentToken.Type != TokenType.Comment &&
                        CurrentToken.Type != TokenType.EndOfFile)
                 {
@@ -970,18 +970,13 @@ namespace ToonTokenizer
             if (IsAtEnd())
                 return false;
 
-            switch (delimiter)
+            return delimiter switch
             {
-                case Delimiter.Comma:
-                    return CurrentToken.Type == TokenType.Comma;
-                case Delimiter.Tab:
-                    // For tab delimiter, check if current token is whitespace containing a single tab
-                    return CurrentToken.Type == TokenType.Whitespace && CurrentToken.Value == "\t";
-                case Delimiter.Pipe:
-                    return CurrentToken.Type == TokenType.Pipe;
-                default:
-                    return false;
-            }
+                Delimiter.Comma => CurrentToken.Type == TokenType.Comma,
+                Delimiter.Tab => CurrentToken.Type == TokenType.Whitespace && CurrentToken.Value == "\t",// For tab delimiter, check if current token is whitespace containing a single tab
+                Delimiter.Pipe => CurrentToken.Type == TokenType.Pipe,
+                _ => false,
+            };
         }
 
         /// <summary>
@@ -1283,45 +1278,34 @@ namespace ToonTokenizer
         /// </summary>
         private AstNode CreateValueNodeFromSingleToken(Token token)
         {
-            switch (token.Type)
+            return token.Type switch
             {
-                case TokenType.String:
-                case TokenType.Identifier:
-                    return new StringValueNode
-                    {
-                        Value = token.Value,
-                        RawValue = token.Value
-                    }.WithPositionFrom(token);
-
-                case TokenType.Number:
-                    return new NumberValueNode
-                    {
-                        Value = double.Parse(token.Value, CultureInfo.InvariantCulture),
-                        IsInteger = !token.Value.Contains(".") && !token.Value.Contains("e") && !token.Value.Contains("E"),
-                        RawValue = token.Value
-                    }.WithPositionFrom(token);
-
-                case TokenType.True:
-                case TokenType.False:
-                    return new BooleanValueNode
-                    {
-                        Value = token.Type == TokenType.True,
-                        RawValue = token.Value
-                    }.WithPositionFrom(token);
-
-                case TokenType.Null:
-                    return new NullValueNode
-                    {
-                        RawValue = token.Value
-                    }.WithPositionFrom(token);
-
-                default:
-                    return new StringValueNode
-                    {
-                        Value = token.Value,
-                        RawValue = token.Value
-                    }.WithPositionFrom(token);
-            }
+                TokenType.String or TokenType.Identifier => new StringValueNode
+                {
+                    Value = token.Value,
+                    RawValue = token.Value
+                }.WithPositionFrom(token),
+                TokenType.Number => new NumberValueNode
+                {
+                    Value = double.Parse(token.Value, CultureInfo.InvariantCulture),
+                    IsInteger = !token.Value.Contains(".") && !token.Value.Contains("e") && !token.Value.Contains("E"),
+                    RawValue = token.Value
+                }.WithPositionFrom(token),
+                TokenType.True or TokenType.False => new BooleanValueNode
+                {
+                    Value = token.Type == TokenType.True,
+                    RawValue = token.Value
+                }.WithPositionFrom(token),
+                TokenType.Null => new NullValueNode
+                {
+                    RawValue = token.Value
+                }.WithPositionFrom(token),
+                _ => new StringValueNode
+                {
+                    Value = token.Value,
+                    RawValue = token.Value
+                }.WithPositionFrom(token),
+            };
         }
     }
 

@@ -203,7 +203,7 @@ namespace ToonTokenizerTest
             var result = Toon.Parse(source);
             var value = result.Document!.Properties[0].Value;
 
-            Assert.IsInstanceOfType(value, typeof(NullValueNode));
+            Assert.IsInstanceOfType<NullValueNode>(value);
             Assert.AreEqual("null", ((NullValueNode)value).RawValue);
         }
 
@@ -218,11 +218,11 @@ nullVal: null";
             var result = Toon.Parse(source);
 
             Assert.HasCount(5, result.Document!.Properties);
-            Assert.IsInstanceOfType(result.Document!.Properties[0].Value, typeof(StringValueNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[1].Value, typeof(NumberValueNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[2].Value, typeof(NumberValueNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[3].Value, typeof(BooleanValueNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[4].Value, typeof(NullValueNode));
+            Assert.IsInstanceOfType<StringValueNode>(result.Document!.Properties[0].Value);
+            Assert.IsInstanceOfType<NumberValueNode>(result.Document!.Properties[1].Value);
+            Assert.IsInstanceOfType<NumberValueNode>(result.Document!.Properties[2].Value);
+            Assert.IsInstanceOfType<BooleanValueNode>(result.Document!.Properties[3].Value);
+            Assert.IsInstanceOfType<NullValueNode>(result.Document!.Properties[4].Value);
         }
 
         [TestMethod]
@@ -284,11 +284,11 @@ nullVal: null";
             var doc1 = Toon.Parse(source1);
             var doc2 = Toon.Parse(source2);
             var doc3 = Toon.Parse(source3);
-            Assert.IsInstanceOfType(doc1.Document!.Properties[0].Value, typeof(StringValueNode));
+            Assert.IsInstanceOfType<StringValueNode>(doc1.Document!.Properties[0].Value);
             Assert.AreEqual("05", ((StringValueNode)doc1.Document!.Properties[0].Value).Value);
-            Assert.IsInstanceOfType(doc2.Document!.Properties[0].Value, typeof(StringValueNode));
+            Assert.IsInstanceOfType<StringValueNode>(doc2.Document!.Properties[0].Value);
             Assert.AreEqual("0001", ((StringValueNode)doc2.Document!.Properties[0].Value).Value);
-            Assert.IsInstanceOfType(doc3.Document!.Properties[0].Value, typeof(StringValueNode));
+            Assert.IsInstanceOfType<StringValueNode>(doc3.Document!.Properties[0].Value);
             Assert.AreEqual("-01", ((StringValueNode)doc3.Document!.Properties[0].Value).Value);
         }
 
@@ -297,7 +297,7 @@ nullVal: null";
         {
             var source = "text: \"Hello\\xWorld\"";
             var result = Toon.Parse(source);
-            
+
             Assert.IsTrue(result.HasErrors, "Should have errors");
             Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
         }

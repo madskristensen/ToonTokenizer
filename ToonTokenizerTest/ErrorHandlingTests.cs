@@ -192,7 +192,7 @@ age: 30
 
             var lexer = new ToonLexer(source);
             var tokens = lexer.Tokenize();
-            
+
             Assert.IsNotEmpty(lexer.Errors, "Lexer should have errors");
             Assert.Contains("Unterminated string", lexer.Errors[0].Message);
         }

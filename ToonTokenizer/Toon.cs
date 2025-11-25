@@ -79,8 +79,10 @@ namespace ToonTokenizer
 
         /// <summary>
         /// Encodes a JSON string to TOON format.
+        /// Supports JSONC (JSON with comments) - both single-line (//) and multi-line (/* */) comments are ignored.
+        /// Also supports trailing commas in objects and arrays.
         /// </summary>
-        /// <param name="json">The JSON string to convert.</param>
+        /// <param name="json">The JSON or JSONC string to convert.</param>
         /// <returns>A TOON formatted string.</returns>
         public static string Encode(string json)
         {
@@ -89,8 +91,10 @@ namespace ToonTokenizer
 
         /// <summary>
         /// Encodes a JSON string to TOON format with the specified options.
+        /// Supports JSONC (JSON with comments) - both single-line (//) and multi-line (/* */) comments are ignored.
+        /// Also supports trailing commas in objects and arrays.
         /// </summary>
-        /// <param name="json">The JSON string to convert.</param>
+        /// <param name="json">The JSON or JSONC string to convert.</param>
         /// <param name="options">Encoding options.</param>
         /// <returns>A TOON formatted string.</returns>
         public static string Encode(string json, ToonEncoderOptions options)
