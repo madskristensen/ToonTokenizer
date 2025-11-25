@@ -40,6 +40,7 @@
 
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\README.md')" />
+    <None Include="Icon.png" Pack="true" PackagePath="\" Condition="Exists('Icon.png')" />
   </ItemGroup>
 
   <ItemGroup>
