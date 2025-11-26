@@ -7,6 +7,28 @@ using ToonTokenizer.Ast;
 namespace ToonTokenizer
 {
     /// <summary>
+    /// Options for controlling which tokens to skip.
+    /// </summary>
+    [Flags]
+    internal enum SkipOptions
+    {
+        None = 0,
+        Whitespace = 1,
+        Newlines = 2,
+        Comments = 4,
+        IndentDedent = 8,
+        Invalid = 16,
+        /// <summary>
+        /// Respect tab delimiters when inside an array with tab delimiter.
+        /// </summary>
+        RespectTabDelimiter = 32,
+        /// <summary>
+        /// Only skip non-tab whitespace (used when tab might be a delimiter marker).
+        /// </summary>
+        NonTabWhitespaceOnly = 64
+    }
+
+    /// <summary>
     /// Parser for the TOON language. Converts tokens into an Abstract Syntax Tree (AST).
     /// </summary>
     public class ToonParser
@@ -164,7 +186,62 @@ namespace ToonTokenizer
 
             var startToken = CurrentToken;
 
-            // Parse key
+            // Parse property key
+            string? key = ParsePropertyKey();
+            if (key == null)
+                return null;
+
+            // Parse array notation (if present)
+            var (arraySize, arrayDelimiter) = ParseArrayNotation();
+
+            // Parse schema notation (if present)
+            List<string>? schema = ParseSchemaNotation(arrayDelimiter);
+
+            // Expect colon separator
+            if (!ExpectColon(key, expectedIndent, startToken))
+            {
+                // ExpectColon returns incomplete property on error
+                return new PropertyNode
+                {
+                    Key = key,
+                    Value = new NullValueNode(),
+                    IndentLevel = expectedIndent,
+                    StartLine = startToken.Line,
+                    StartColumn = startToken.Column,
+                    StartPosition = startToken.Position,
+                    EndLine = CurrentToken.Line,
+                    EndColumn = CurrentToken.Column,
+                    EndPosition = CurrentToken.Position
+                };
+            }
+
+            // Parse property value
+            AstNode value = ParsePropertyValue(arraySize, arrayDelimiter, schema);
+
+            // Create and return property node
+            var property = new PropertyNode
+            {
+                Key = key,
+                Value = value,
+                IndentLevel = expectedIndent,
+                StartLine = startToken.Line,
+                StartColumn = startToken.Column,
+                StartPosition = startToken.Position,
+                EndLine = _position > 0 ? _tokens[_position - 1].Line : startToken.Line,
+                EndColumn = _position > 0 ? _tokens[_position - 1].Column : startToken.Column,
+                EndPosition = _position > 0 ? _tokens[_position - 1].Position : startToken.Position
+            };
+
+            SkipWhitespaceAndComments();
+
+            return property;
+        }
+
+        /// <summary>
+        /// Parses a property key (identifier or string).
+        /// </summary>
+        private string? ParsePropertyKey()
+        {
             if (CurrentToken.Type != TokenType.Identifier && CurrentToken.Type != TokenType.String)
             {
                 RecordError(ParserErrorMessages.ExpectedPropertyKey, CurrentToken);
@@ -174,141 +251,158 @@ namespace ToonTokenizer
             string key = CurrentToken.Value;
             Advance();
             SkipWhitespace();
+            return key;
+        }
 
-            // Check for array/table notation
+        /// <summary>
+        /// Parses array notation [size] with optional delimiter marker.
+        /// Returns (arraySize, delimiter) tuple.
+        /// </summary>
+        private (int? arraySize, Delimiter? delimiter) ParseArrayNotation()
+        {
+            if (CurrentToken.Type != TokenType.LeftBracket)
+                return (null, null);
+
+            Advance();
+            SkipNonDelimiterWhitespace();
+
             int? arraySize = null;
-            List<string>? schema = null;
             Delimiter? arrayDelimiter = null;
 
-            if (CurrentToken.Type == TokenType.LeftBracket)
+            if (CurrentToken.Type == TokenType.Number)
             {
+                arraySize = (int)double.Parse(CurrentToken.Value, CultureInfo.InvariantCulture);
                 Advance();
                 SkipNonDelimiterWhitespace();
-
-                if (CurrentToken.Type == TokenType.Number)
-                {
-                    arraySize = (int)double.Parse(CurrentToken.Value, CultureInfo.InvariantCulture);
-                    Advance();
-                    SkipNonDelimiterWhitespace();
-                }
-
-                // Check for delimiter marker before closing bracket
-                if (CurrentToken.Type == TokenType.Whitespace && _position + 1 < _tokens.Count &&
-                    _tokens[_position + 1].Type == TokenType.RightBracket)
-                {
-                    // Tab delimiter: whitespace token containing only tab character
-                    if (CurrentToken.Value == "\t")
-                    {
-                        arrayDelimiter = Delimiter.Tab;
-                        Advance(); // consume the tab
-                    }
-                }
-                else if (CurrentToken.Type == TokenType.Pipe)
-                {
-                    arrayDelimiter = Delimiter.Pipe;
-                    Advance();
-                }
-                // If no delimiter marker found, default is Comma (no need to set explicitly)
-
-                if (CurrentToken.Type != TokenType.RightBracket)
-                {
-                    RecordError(ParserErrorMessages.ExpectedRightBracket, CurrentToken);
-                    // Try to recover by finding the next colon
-                    while (!IsAtEnd() && CurrentToken.Type != TokenType.Colon && CurrentToken.Type != TokenType.Newline)
-                    {
-                        if (CurrentToken.Type == TokenType.RightBracket)
-                        {
-                            Advance();
-                            break;
-                        }
-                        Advance();
-                    }
-                }
-                else
-                {
-                    Advance();
-                }
-                SkipWhitespace();
             }
 
-            // Check for schema notation
-            if (CurrentToken.Type == TokenType.LeftBrace)
+            // Check for delimiter marker before closing bracket
+            if (CurrentToken.Type == TokenType.Whitespace && _position + 1 < _tokens.Count &&
+                _tokens[_position + 1].Type == TokenType.RightBracket)
             {
-                // Determine active delimiter: use array delimiter if specified, otherwise parent delimiter
-                Delimiter activeDelimiter = arrayDelimiter ?? _delimiterStack.Peek();
-                try
+                // Tab delimiter: whitespace token containing only tab character
+                if (CurrentToken.Value == "\t")
                 {
-                    schema = ParseSchema(activeDelimiter);
-                }
-                catch (ParseException ex)
-                {
-                    RecordError(ex.Message, ex.Position, ex.Length, ex.Line, ex.Column);
-                    // Try to recover by skipping to next }
-                    while (!IsAtEnd() && CurrentToken.Type != TokenType.RightBrace && CurrentToken.Type != TokenType.Colon)
-                    {
-                        Advance();
-                    }
-                    if (CurrentToken.Type == TokenType.RightBrace)
-                    {
-                        Advance();
-                    }
+                    arrayDelimiter = Delimiter.Tab;
+                    Advance(); // consume the tab
                 }
             }
-
-            // Expect colon (with fallback scan, skipping blank lines and comments)
-            if (CurrentToken.Type != TokenType.Colon)
+            else if (CurrentToken.Type == TokenType.Pipe)
             {
-                int lookahead = _position;
-                while (lookahead < _tokens.Count)
+                arrayDelimiter = Delimiter.Pipe;
+                Advance();
+            }
+            // If no delimiter marker found, default is Comma (no need to set explicitly)
+
+            if (CurrentToken.Type != TokenType.RightBracket)
+            {
+                RecordError(ParserErrorMessages.ExpectedRightBracket, CurrentToken);
+                // Try to recover by finding the next colon
+                while (!IsAtEnd() && CurrentToken.Type != TokenType.Colon && CurrentToken.Type != TokenType.Newline)
                 {
-                    var t = _tokens[lookahead];
-                    // Skip whitespace, newlines, and comments
-                    if (t.Type == TokenType.Whitespace || t.Type == TokenType.Newline || t.Type == TokenType.Comment || t.Type == TokenType.Indent || t.Type == TokenType.Dedent)
+                    if (CurrentToken.Type == TokenType.RightBracket)
                     {
-                        lookahead++;
-                        continue;
-                    }
-                    if (t.Type == TokenType.Colon)
-                    {
-                        _position = lookahead; // jump to colon token
+                        Advance();
                         break;
                     }
-                    // If we hit another property key or EOF before colon, error
-                    if (t.Type == TokenType.Identifier || t.Type == TokenType.String || t.Type == TokenType.EndOfFile)
-                    {
-                        break;
-                    }
-                    lookahead++;
-                }
-                if (CurrentToken.Type != TokenType.Colon)
-                {
-                    RecordError(ParserErrorMessages.ExpectedColonAfterKey, CurrentToken);
-                    // Skip to the next line to recover (avoid multiple errors for same line)
-                    while (!IsAtEnd() && CurrentToken.Type != TokenType.Newline && CurrentToken.Type != TokenType.EndOfFile)
-                    {
-                        Advance();
-                    }
-                    // Return incomplete property with null value
-                    return new PropertyNode
-                    {
-                        Key = key,
-                        Value = new NullValueNode(),
-                        IndentLevel = expectedIndent,
-                        StartLine = startToken.Line,
-                        StartColumn = startToken.Column,
-                        StartPosition = startToken.Position,
-                        EndLine = CurrentToken.Line,
-                        EndColumn = CurrentToken.Column,
-                        EndPosition = CurrentToken.Position
-                    };
+                    Advance();
                 }
             }
-            Advance();
+            else
+            {
+                Advance();
+            }
             SkipWhitespace();
 
-            // Parse value
-            AstNode value;
+            return (arraySize, arrayDelimiter);
+        }
 
+        /// <summary>
+        /// Parses schema notation {field1, field2, ...}.
+        /// </summary>
+        private List<string>? ParseSchemaNotation(Delimiter? arrayDelimiter)
+        {
+            if (CurrentToken.Type != TokenType.LeftBrace)
+                return null;
+
+            // Determine active delimiter: use array delimiter if specified, otherwise parent delimiter
+            Delimiter activeDelimiter = arrayDelimiter ?? _delimiterStack.Peek();
+            try
+            {
+                return ParseSchema(activeDelimiter);
+            }
+            catch (ParseException ex)
+            {
+                RecordError(ex.Message, ex.Position, ex.Length, ex.Line, ex.Column);
+                // Try to recover by skipping to next }
+                while (!IsAtEnd() && CurrentToken.Type != TokenType.RightBrace && CurrentToken.Type != TokenType.Colon)
+                {
+                    Advance();
+                }
+                if (CurrentToken.Type == TokenType.RightBrace)
+                {
+                    Advance();
+                }
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Expects a colon separator after property key/notation.
+        /// Returns false on error (after recording error and creating recovery node).
+        /// </summary>
+        private bool ExpectColon(string key, int expectedIndent, Token startToken)
+        {
+            if (CurrentToken.Type == TokenType.Colon)
+            {
+                Advance();
+                SkipWhitespace();
+                return true;
+            }
+
+            // Fallback scan: try to find colon, skipping blank lines and comments
+            int lookahead = _position;
+            while (lookahead < _tokens.Count)
+            {
+                var t = _tokens[lookahead];
+                // Skip whitespace, newlines, and comments
+                if (t.Type == TokenType.Whitespace || t.Type == TokenType.Newline || 
+                    t.Type == TokenType.Comment || t.Type == TokenType.Indent || 
+                    t.Type == TokenType.Dedent)
+                {
+                    lookahead++;
+                    continue;
+                }
+                if (t.Type == TokenType.Colon)
+                {
+                    _position = lookahead; // jump to colon token
+                    Advance();
+                    SkipWhitespace();
+                    return true;
+                }
+                // If we hit another property key or EOF before colon, error
+                if (t.Type == TokenType.Identifier || t.Type == TokenType.String || t.Type == TokenType.EndOfFile)
+                {
+                    break;
+                }
+                lookahead++;
+            }
+
+            // Colon not found - record error and prepare for recovery
+            RecordError(ParserErrorMessages.ExpectedColonAfterKey, CurrentToken);
+            // Skip to the next line to recover (avoid multiple errors for same line)
+            while (!IsAtEnd() && CurrentToken.Type != TokenType.Newline && CurrentToken.Type != TokenType.EndOfFile)
+            {
+                Advance();
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Parses the value portion of a property, dispatching to the appropriate parser.
+        /// </summary>
+        private AstNode ParsePropertyValue(int? arraySize, Delimiter? arrayDelimiter, List<string>? schema)
+        {
             // Push active delimiter to stack if this is an array
             if (arraySize.HasValue)
             {
@@ -332,35 +426,35 @@ namespace ToonTokenizer
                     if (schema != null && arraySize.HasValue)
                     {
                         // Table array
-                        value = ParseTableArray(arraySize.Value, schema, nextIndent);
+                        return ParseTableArray(arraySize.Value, schema, nextIndent);
                     }
                     else if (arraySize.HasValue)
                     {
                         // Expanded list array
-                        value = ParseExpandedArray(arraySize.Value, nextIndent);
+                        return ParseExpandedArray(arraySize.Value, nextIndent);
                     }
                     else
                     {
                         // Nested object
-                        value = ParseObject(nextIndent);
+                        return ParseObject(nextIndent);
                     }
                 }
                 else if (arraySize.HasValue && schema == null)
                 {
                     // Inline array
-                    value = ParseInlineArray(arraySize.Value);
+                    return ParseInlineArray(arraySize.Value);
                 }
                 else
                 {
                     // Simple value
-                    value = ParseValue();
+                    return ParseValue();
                 }
             }
             catch (ParseException ex)
             {
                 RecordError(ex.Message, ex.Position, ex.Length, ex.Line, ex.Column);
                 // Use null as fallback value
-                value = new NullValueNode();
+                return new NullValueNode();
             }
             finally
             {
@@ -370,23 +464,6 @@ namespace ToonTokenizer
                     _delimiterStack.Pop();
                 }
             }
-
-            var property = new PropertyNode
-            {
-                Key = key,
-                Value = value,
-                IndentLevel = expectedIndent,
-                StartLine = startToken.Line,
-                StartColumn = startToken.Column,
-                StartPosition = startToken.Position,
-                EndLine = _position > 0 ? _tokens[_position - 1].Line : startToken.Line,
-                EndColumn = _position > 0 ? _tokens[_position - 1].Column : startToken.Column,
-                EndPosition = _position > 0 ? _tokens[_position - 1].Position : startToken.Position
-            };
-
-            SkipWhitespaceAndComments();
-
-            return property;
         }
 
         private List<string> ParseSchema(Delimiter delimiter)
@@ -508,9 +585,7 @@ namespace ToonTokenizer
                 SkipWhitespaceAndComments();
             }
 
-            obj.StartLine = startToken.Line;
-            obj.StartColumn = startToken.Column;
-            obj.StartPosition = startToken.Position;
+            SetNodePositions(obj, startToken, GetEndToken());
 
             if (obj.Properties.Count > 0)
             {
@@ -538,7 +613,6 @@ namespace ToonTokenizer
 
             var startToken = GetStartToken();
 
-
             SkipWhitespaceAndComments();
 
             // Allow empty table arrays (e.g., empty[0]{id,name}:\n or EOF or dedent)
@@ -546,6 +620,7 @@ namespace ToonTokenizer
                 CurrentToken.Type == TokenType.Dedent ||
                 (CurrentToken.Type == TokenType.Newline && (PeekNextTokenType() == TokenType.EndOfFile || PeekNextTokenType() == TokenType.Dedent)))
             {
+                SetNodePositions(table, startToken, GetEndToken());
                 return table;
             }
 
@@ -588,14 +663,7 @@ namespace ToonTokenizer
                 }
             }
 
-            var endToken = GetEndToken();
-            table.StartLine = startToken.Line;
-            table.StartColumn = startToken.Column;
-            table.StartPosition = startToken.Position;
-            table.EndLine = endToken.Line;
-            table.EndColumn = endToken.Column;
-            table.EndPosition = endToken.Position;
-
+            SetNodePositions(table, startToken, GetEndToken());
             return table;
         }
 
@@ -734,15 +802,14 @@ namespace ToonTokenizer
                 }
             }
 
-            array.StartLine = startToken.Line;
-            array.StartColumn = startToken.Column;
-            array.StartPosition = startToken.Position;
+            SetNodePositions(array, startToken, GetEndToken());
 
             if (array.Elements.Count > 0 && array.Elements[array.Elements.Count - 1] != null)
             {
-                array.EndLine = array.Elements[array.Elements.Count - 1].EndLine;
-                array.EndColumn = array.Elements[array.Elements.Count - 1].EndColumn;
-                array.EndPosition = array.Elements[array.Elements.Count - 1].EndPosition;
+                var lastElement = array.Elements[array.Elements.Count - 1];
+                array.EndLine = lastElement.EndLine;
+                array.EndColumn = lastElement.EndColumn;
+                array.EndPosition = lastElement.EndPosition;
             }
 
             return array;
@@ -861,28 +928,71 @@ namespace ToonTokenizer
             }
         }
 
-        private void SkipWhitespace()
+        /// <summary>
+        /// Skips tokens based on the specified options.
+        /// </summary>
+        private void Skip(SkipOptions options)
         {
-            while (!IsAtEnd() && (CurrentToken.Type == TokenType.Whitespace ||
-                                  CurrentToken.Type == TokenType.Indent ||
-                                  CurrentToken.Type == TokenType.Dedent))
+            bool skipWhitespace = (options & SkipOptions.Whitespace) != 0;
+            bool skipNewlines = (options & SkipOptions.Newlines) != 0;
+            bool skipComments = (options & SkipOptions.Comments) != 0;
+            bool skipIndentDedent = (options & SkipOptions.IndentDedent) != 0;
+            bool skipInvalid = (options & SkipOptions.Invalid) != 0;
+            bool respectTabDelimiter = (options & SkipOptions.RespectTabDelimiter) != 0;
+            bool nonTabOnly = (options & SkipOptions.NonTabWhitespaceOnly) != 0;
+
+            while (!IsAtEnd())
             {
+                bool shouldSkip = CurrentToken.Type switch
+                {
+                    TokenType.Whitespace => ShouldSkipWhitespace(skipWhitespace, respectTabDelimiter, nonTabOnly),
+                    TokenType.Newline => skipNewlines,
+                    TokenType.Comment => skipComments,
+                    TokenType.Indent or TokenType.Dedent => skipIndentDedent,
+                    TokenType.Invalid => skipInvalid,
+                    _ => false
+                };
+
+                if (!shouldSkip)
+                    break;
+
                 Advance();
             }
         }
 
-        private void SkipWhitespaceAndComments()
+        private bool ShouldSkipWhitespace(bool skipWhitespace, bool respectTabDelimiter, bool nonTabOnly)
         {
-            while (!IsAtEnd() && (CurrentToken.Type == TokenType.Whitespace ||
-                                  CurrentToken.Type == TokenType.Newline ||
-                                  CurrentToken.Type == TokenType.Comment ||
-                                  CurrentToken.Type == TokenType.Indent ||
-                                  CurrentToken.Type == TokenType.Dedent ||
-                                  CurrentToken.Type == TokenType.Invalid))
+            if (!skipWhitespace)
+                return false;
+
+            // If we're respecting tab delimiters and inside an array with tab delimiter
+            if (respectTabDelimiter && _delimiterStack.Count > 1)
             {
-                Advance();
+                Delimiter activeDelimiter = _delimiterStack.Peek();
+                if (activeDelimiter == Delimiter.Tab && CurrentToken.Value == "\t")
+                    return false;
             }
+
+            // If non-tab only mode, don't skip tabs
+            if (nonTabOnly && CurrentToken.Value.Contains("\t"))
+                return false;
+
+            return true;
         }
+
+        // Convenience methods for common skip patterns
+        private void SkipWhitespace() => 
+            Skip(SkipOptions.Whitespace | SkipOptions.IndentDedent);
+
+        private void SkipWhitespaceAndComments() => 
+            Skip(SkipOptions.Whitespace | SkipOptions.Newlines | SkipOptions.Comments | 
+                 SkipOptions.IndentDedent | SkipOptions.Invalid);
+
+        private void SkipNonDelimiterWhitespace() => 
+            Skip(SkipOptions.Whitespace | SkipOptions.IndentDedent | SkipOptions.NonTabWhitespaceOnly);
+
+        private void SkipWhitespaceExceptTabDelimiter() => 
+            Skip(SkipOptions.Whitespace | SkipOptions.IndentDedent | SkipOptions.RespectTabDelimiter);
 
         private int GetCurrentIndentation()
         {
@@ -934,51 +1044,23 @@ namespace ToonTokenizer
             return delimiter switch
             {
                 Delimiter.Comma => CurrentToken.Type == TokenType.Comma,
-                Delimiter.Tab => CurrentToken.Type == TokenType.Whitespace && CurrentToken.Value == "\t",// For tab delimiter, check if current token is whitespace containing a single tab
+                Delimiter.Tab => CurrentToken.Type == TokenType.Whitespace && CurrentToken.Value == "\t",
                 Delimiter.Pipe => CurrentToken.Type == TokenType.Pipe,
                 _ => false,
             };
         }
 
         /// <summary>
-        /// Skips non-tab whitespace and indent/dedent tokens.
-        /// Used when we need to skip whitespace but preserve tabs that might be delimiter markers.
+        /// Sets position information on a node from start and end tokens.
         /// </summary>
-        private void SkipNonDelimiterWhitespace()
+        private void SetNodePositions<T>(T node, Token startToken, Token endToken) where T : AstNode
         {
-            while (!IsAtEnd() && (CurrentToken.Type == TokenType.Indent ||
-                                  CurrentToken.Type == TokenType.Dedent ||
-                                  (CurrentToken.Type == TokenType.Whitespace && !CurrentToken.Value.Contains("\t"))))
-            {
-                Advance();
-            }
-        }
-
-        /// <summary>
-        /// Skips whitespace tokens, but not if they are tab delimiters.
-        /// </summary>
-        private void SkipWhitespaceExceptTabDelimiter()
-        {
-            Delimiter activeDelimiter = _delimiterStack.Peek();
-            while (!IsAtEnd() && CurrentToken.Type == TokenType.Whitespace)
-            {
-                // Don't skip tabs if they're the active delimiter
-                if (activeDelimiter == Delimiter.Tab && CurrentToken.Value == "\t")
-                    break;
-
-                if (CurrentToken.Type == TokenType.Indent || CurrentToken.Type == TokenType.Dedent)
-                {
-                    Advance();
-                }
-                else if (CurrentToken.Type == TokenType.Whitespace)
-                {
-                    Advance();
-                }
-                else
-                {
-                    break;
-                }
-            }
+            node.StartLine = startToken.Line;
+            node.StartColumn = startToken.Column;
+            node.StartPosition = startToken.Position;
+            node.EndLine = endToken.Line;
+            node.EndColumn = endToken.Column;
+            node.EndPosition = endToken.Position;
         }
 
         /// <summary>
@@ -996,6 +1078,7 @@ namespace ToonTokenizer
                 CurrentToken.Type == TokenType.Dedent ||
                 (CurrentToken.Type == TokenType.Newline && (PeekNextTokenType() == TokenType.EndOfFile || PeekNextTokenType() == TokenType.Dedent)))
             {
+                SetNodePositions(array, startToken, GetEndToken());
                 return array;
             }
 
@@ -1185,14 +1268,7 @@ namespace ToonTokenizer
                 }
             }
 
-            var endToken = GetEndToken();
-            array.StartLine = startToken.Line;
-            array.StartColumn = startToken.Column;
-            array.StartPosition = startToken.Position;
-            array.EndLine = endToken.Line;
-            array.EndColumn = endToken.Column;
-            array.EndPosition = endToken.Position;
-
+            SetNodePositions(array, startToken, GetEndToken());
             return array;
         }
 
