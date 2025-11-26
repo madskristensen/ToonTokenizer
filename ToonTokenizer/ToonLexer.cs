@@ -13,7 +13,7 @@ namespace ToonTokenizer
         private int _position;
         private int _line;
         private int _column;
-        private int _lineStartPosition;
+
         private readonly Stack<int> _indentStack;
         private readonly List<ToonError> _errors;
         private readonly StringBuilder _stringBuilder;
@@ -24,7 +24,6 @@ namespace ToonTokenizer
             _position = 0;
             _line = 1;
             _column = 1;
-            _lineStartPosition = 0;
             _indentStack = new Stack<int>();
             _indentStack.Push(0);
             _errors = [];
@@ -168,7 +167,6 @@ namespace ToonTokenizer
             }
 
             _line++;
-            _lineStartPosition = _position;
             _column = 1;
 
             // Check indentation on the next line

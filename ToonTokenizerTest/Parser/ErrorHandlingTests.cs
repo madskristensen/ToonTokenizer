@@ -191,6 +191,7 @@ age: 30
             var source = "name: \"John";
 
             var lexer = new ToonLexer(source);
+            _ = lexer.Tokenize(); // Need to actually tokenize to generate errors
 
             Assert.IsNotEmpty(lexer.Errors, "Lexer should have errors");
             Assert.Contains("Unterminated", lexer.Errors[0].Message);
