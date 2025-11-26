@@ -16,7 +16,7 @@ namespace ToonTokenizerTest.Integration
             // Should complete (not hang) and have errors
             Assert.IsTrue(result.HasErrors, "Should have errors");
             Assert.IsNotNull(result.Document, "Should return document");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -28,7 +28,7 @@ namespace ToonTokenizerTest.Integration
 
             // Should parse and report error on first line
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
 
             // Should be able to continue parsing after the error
             Assert.IsNotNull(result.Document);
@@ -63,7 +63,7 @@ namespace ToonTokenizerTest.Integration
             Assert.HasCount(1, result.Document.Properties, "Should parse the context property");
 
             // Verify the error is about unterminated string
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]

@@ -18,7 +18,7 @@ namespace ToonTokenizerTest.Lexer
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -29,7 +29,7 @@ namespace ToonTokenizerTest.Lexer
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -142,7 +142,7 @@ namespace ToonTokenizerTest.Lexer
             // The bare quote in the middle triggers unterminated string error
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -178,7 +178,7 @@ age: 30";
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -189,7 +189,7 @@ age: 30";
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -201,7 +201,7 @@ age: 30";
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]

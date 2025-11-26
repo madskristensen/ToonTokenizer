@@ -15,7 +15,7 @@ namespace ToonTokenizerTest.Lexer
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -28,7 +28,7 @@ namespace ToonTokenizerTest.Lexer
             
             Assert.IsTrue(success, "TryParse should return true for recoverable errors");
             Assert.IsTrue(result.HasErrors, "Result should contain errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -38,7 +38,7 @@ namespace ToonTokenizerTest.Lexer
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@ namespace ToonTokenizerTest.Lexer
             
             Assert.IsTrue(success, "TryParse should return true for recoverable errors");
             Assert.IsTrue(result.HasErrors, "Result should contain errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -60,7 +60,7 @@ namespace ToonTokenizerTest.Lexer
             
             var result = Toon.Parse(source);
             Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
 
         [TestMethod]
@@ -72,7 +72,7 @@ namespace ToonTokenizerTest.Lexer
             
             Assert.IsTrue(success, "TryParse should return true for recoverable errors");
             Assert.IsTrue(result.HasErrors, "Result should contain errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
         }
     }
 }

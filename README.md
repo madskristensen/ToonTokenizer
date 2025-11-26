@@ -22,11 +22,13 @@ Perfect for LLM prompts, configuration files, and data interchange where token e
 - ✅ **Tokens included in parse results** - no separate tokenization call needed
 - ✅ **Position tracking** for every token and AST node (line, column, span)
 - ✅ **Resilient parsing** - continues after errors, returns partial AST
-- ✅ **Rich error reporting** - collects all errors with precise locations
+- ✅ **Rich error reporting** - collects all errors with precise locations and error codes
+- ✅ **Standardized error codes** - 20+ error codes (TOON1xxx-9xxx) for programmatic handling
+- ✅ **Context-aware error messages** - every error explains what, why, and how to fix
 - ✅ **Visitor pattern** for AST traversal and transformation
 - ✅ **Extension methods** for syntax highlighting and IDE integration
 - ✅ **TOON spec §6.1 compliance** - array size validation (detects size mismatches)
-- ✅ **Battle-tested** with 410+ unit tests
+- ✅ **Battle-tested** with 422+ unit tests
 
 **Targets:** .NET Standard 2.0 (maximum compatibility)
 
@@ -240,12 +242,77 @@ public class ToonParseResult
 public class ToonError
 {
     public string Message { get; }
+    public string? Code { get; }      // Error code (e.g., "TOON1001")
     public int Position { get; }      // 0-based character offset
     public int Length { get; }        // Length of error span
     public int Line { get; }          // 1-based line number
     public int Column { get; }        // 1-based column number
     public int EndPosition { get; }   // Position + Length
 }
+```
+
+### Error Codes for Programmatic Handling
+
+All errors include standardized error codes for programmatic handling and filtering:
+
+```csharp
+var result = Toon.Parse(source);
+
+foreach (var error in result.Errors)
+{
+    // Errors include descriptive messages with fix suggestions
+    Console.WriteLine($"[{error.Code}] {error.Message}");
+    
+    // Filter by error type
+    if (error.Code?.StartsWith("TOON1") == true)
+        Console.WriteLine("  → Lexer/tokenization error");
+    else if (error.Code?.StartsWith("TOON2") == true)
+        Console.WriteLine("  → Parser structural error");
+    else if (error.Code?.StartsWith("TOON3") == true)
+        Console.WriteLine("  → Validation error");
+}
+```
+
+**Error Code Categories:**
+
+| Category | Range | Description | Examples |
+|----------|-------|-------------|----------|
+| **Lexer** | TOON1xxx | Tokenization errors | `TOON1001` Unterminated string<br/>`TOON1002` Invalid escape sequence<br/>`TOON1003` Invalid character |
+| **Parser** | TOON2xxx | Structural errors | `TOON2001` Expected property key<br/>`TOON2002` Expected colon<br/>`TOON2003` Expected right bracket<br/>`TOON2004` Expected value<br/>`TOON2005` Expected delimiter |
+| **Validation** | TOON3xxx | Semantic errors | `TOON3001` Array size mismatch<br/>`TOON3002` Table array size mismatch<br/>`TOON3003` Table row field mismatch |
+| **Delimiters** | TOON4xxx | Delimiter issues | `TOON4001` Mixed delimiters<br/>`TOON4002` Delimiter marker misplaced |
+| **Indentation** | TOON5xxx | Indentation problems | `TOON5001` Unexpected indentation<br/>`TOON5002` Inconsistent indentation |
+| **Internal** | TOON9xxx | Library bugs | `TOON9001` Infinite loop detected |
+
+**Context-Aware Error Messages:**
+
+Every error includes:
+- ✅ **What went wrong** - Clear description of the problem
+- ✅ **Why it's wrong** - Explanation of the rule that was violated
+- ✅ **How to fix it** - Actionable suggestions for correction
+
+Example error messages:
+
+```csharp
+// Unterminated string
+[TOON1001] Unterminated double-quoted string at line 5, column 10. 
+String reached end of line without closing " character. 
+Fix: Add closing " before the end of the line
+
+// Invalid escape sequence
+[TOON1002] Invalid escape sequence '\x' at line 3, column 15. 
+Valid escape sequences: \n, \r, \t, \\, \", \'. 
+Fix: Use a valid escape sequence or remove the backslash
+
+// Array size mismatch
+[TOON3001] Array size mismatch: declared 5 elements, but found 3. 
+Missing 2 elements. Check if array is incomplete or elements are on wrong indentation level. 
+Fix: Either add 2 more elements or change the size declaration [5]→[3]
+
+// Table size mismatch with helpful hint
+[TOON3002] Table array size mismatch: declared 10 rows, but found 8. 
+Missing 2 rows. Check if rows are incomplete or have incorrect indentation. 
+Fix: Either add 2 more rows or update the size [10]→[8]
 ```
 
 ### Token Types
@@ -562,10 +629,11 @@ What insights can you provide?
 - Resilient parsing with error recovery
 
 ### 🎯 Production Ready
-- 410+ unit tests covering edge cases
+- 422+ unit tests covering edge cases
 - Battle-tested on complex real-world data
 - Handles malformed input gracefully
-- Comprehensive error reporting
+- Comprehensive error reporting with standardized error codes
+- Context-aware error messages with actionable fix suggestions
 
 ### 🚀 Performance Focused
 - Efficient single-pass lexer

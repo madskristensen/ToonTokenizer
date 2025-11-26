@@ -280,11 +280,15 @@ namespace ToonTokenizer
                             {
                                 // Invalid escape - record error and include literal characters
                                 _errors.Add(new ToonError(
-                                    $"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}",
+                                    $"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}. " +
+                                    $"Valid escape sequences are: \\n (newline), \\r (carriage return), \\t (tab), \\\\ (backslash), \\\" (double quote)" +
+                                    (quote == '\'' ? ", \\' (single quote)" : "") + ". " +
+                                    $"Fix: Use \\\\ if you meant a literal backslash, or remove the backslash for a regular character",
                                     _position - 1,
                                     2,
                                     _line,
-                                    _column - 1));
+                                    _column - 1,
+                                    ErrorCode.InvalidEscapeSequence));
                                 _stringBuilder.Append('\\');
                                 _stringBuilder.Append(escaped);
                             }
@@ -292,11 +296,15 @@ namespace ToonTokenizer
                         default:
                             // Invalid escape - record error and include literal characters
                             _errors.Add(new ToonError(
-                                $"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}",
+                                $"Invalid escape sequence: \\{escaped} at line {_line}, column {_column}. " +
+                                $"Valid escape sequences are: \\n (newline), \\r (carriage return), \\t (tab), \\\\ (backslash), \\\" (double quote)" +
+                                (quote == '\'' ? ", \\' (single quote)" : "") + ". " +
+                                $"Fix: Use \\\\ if you meant a literal backslash, or remove the backslash for a regular character",
                                 _position - 1,
                                 2,
                                 _line,
-                                _column - 1));
+                                _column - 1,
+                                ErrorCode.InvalidEscapeSequence));
                             _stringBuilder.Append('\\');
                             _stringBuilder.Append(escaped);
                             break;
@@ -318,14 +326,18 @@ namespace ToonTokenizer
                 // String was not properly closed (hit EOF or newline)
                 int endPos = _position;
                 string reason = _position >= _source.Length ? "end of file" : "newline";
+                string quoteType = quote == '"' ? "double" : "single";
 
                 // Record error but continue parsing
                 _errors.Add(new ToonError(
-                    $"Unterminated string starting at line {_line}, column {startColumn} (reached {reason})",
+                    $"Unterminated {quoteType}-quoted string at line {_line}, column {startColumn}. " +
+                    $"String reached {reason} without closing {quote} character. " +
+                    $"Fix: Add closing {quote} before the end of the line",
                     start,
                     endPos - start,
                     _line,
-                    startColumn));
+                    startColumn,
+                    ErrorCode.UnterminatedString));
 
                 // Return what we have so far as an invalid token
                 return new Token(TokenType.Invalid, quote + _stringBuilder.ToString(), _line, startColumn, start, endPos - start);

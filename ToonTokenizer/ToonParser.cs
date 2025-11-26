@@ -58,14 +58,15 @@ namespace ToonTokenizer
         /// <summary>
         /// Records an error and optionally advances to recover.
         /// </summary>
-        private void RecordError(string message, Token token, bool skipToNextProperty = false)
+        private void RecordError(string message, Token token, bool skipToNextProperty = false, string? errorCode = null)
         {
             _errors.Add(new ToonError(
                 message,
                 token.Position,
                 token.Value?.Length ?? 1,
                 token.Line,
-                token.Column
+                token.Column,
+                errorCode
             ));
 
             if (skipToNextProperty)
@@ -77,9 +78,9 @@ namespace ToonTokenizer
         /// <summary>
         /// Records an error with explicit position information.
         /// </summary>
-        private void RecordError(string message, int position, int length, int line, int column)
+        private void RecordError(string message, int position, int length, int line, int column, string? errorCode = null)
         {
-            _errors.Add(new ToonError(message, position, length, line, column));
+            _errors.Add(new ToonError(message, position, length, line, column, errorCode));
         }
 
         /// <summary>
@@ -198,7 +199,7 @@ namespace ToonTokenizer
             List<string>? schema = ParseSchemaNotation(arrayDelimiter);
 
             // Expect colon separator
-            if (!ExpectColon(key, expectedIndent, startToken))
+            if (!ExpectColon())
             {
                 // ExpectColon returns incomplete property on error
                 return new PropertyNode
@@ -244,7 +245,7 @@ namespace ToonTokenizer
         {
             if (CurrentToken.Type != TokenType.Identifier && CurrentToken.Type != TokenType.String)
             {
-                RecordError(ParserErrorMessages.ExpectedPropertyKey, CurrentToken);
+                RecordError(ParserErrorMessages.ExpectedPropertyKey, CurrentToken, false, ErrorCode.ExpectedPropertyKey);
                 return null;
             }
 
@@ -296,7 +297,7 @@ namespace ToonTokenizer
 
             if (CurrentToken.Type != TokenType.RightBracket)
             {
-                RecordError(ParserErrorMessages.ExpectedRightBracket, CurrentToken);
+                RecordError(ParserErrorMessages.ExpectedRightBracket, CurrentToken, false, ErrorCode.ExpectedRightBracket);
                 // Try to recover by finding the next colon
                 while (!IsAtEnd() && CurrentToken.Type != TokenType.Colon && CurrentToken.Type != TokenType.Newline)
                 {
@@ -351,7 +352,7 @@ namespace ToonTokenizer
         /// Expects a colon separator after property key/notation.
         /// Returns false on error (after recording error and creating recovery node).
         /// </summary>
-        private bool ExpectColon(string key, int expectedIndent, Token startToken)
+        private bool ExpectColon()
         {
             if (CurrentToken.Type == TokenType.Colon)
             {
@@ -366,8 +367,8 @@ namespace ToonTokenizer
             {
                 var t = _tokens[lookahead];
                 // Skip whitespace, newlines, and comments
-                if (t.Type == TokenType.Whitespace || t.Type == TokenType.Newline || 
-                    t.Type == TokenType.Comment || t.Type == TokenType.Indent || 
+                if (t.Type == TokenType.Whitespace || t.Type == TokenType.Newline ||
+                    t.Type == TokenType.Comment || t.Type == TokenType.Indent ||
                     t.Type == TokenType.Dedent)
                 {
                     lookahead++;
@@ -389,7 +390,7 @@ namespace ToonTokenizer
             }
 
             // Colon not found - record error and prepare for recovery
-            RecordError(ParserErrorMessages.ExpectedColonAfterKey, CurrentToken);
+            RecordError(ParserErrorMessages.ExpectedColonAfterKey, CurrentToken, false, ErrorCode.ExpectedColon);
             // Skip to the next line to recover (avoid multiple errors for same line)
             while (!IsAtEnd() && CurrentToken.Type != TokenType.Newline && CurrentToken.Type != TokenType.EndOfFile)
             {
@@ -668,12 +669,14 @@ namespace ToonTokenizer
             // Validate table array row count (§6.1 compliance)
             if (table.Rows.Count != table.DeclaredSize)
             {
+                string hint = ErrorHints.GetTableSizeMismatchHint(table.DeclaredSize, table.Rows.Count);
                 RecordError(
-                    $"Table array size mismatch: declared {table.DeclaredSize} rows, but found {table.Rows.Count}",
+                    $"Table array size mismatch: declared {table.DeclaredSize} rows, but found {table.Rows.Count}. {hint}",
                     startToken.Position,
                     GetEndToken().Position - startToken.Position,
                     startToken.Line,
-                    startToken.Column
+                    startToken.Column,
+                    ErrorCode.TableSizeMismatch
                 );
             }
 
@@ -820,12 +823,14 @@ namespace ToonTokenizer
             // Validate array size (§6.1 compliance)
             if (array.Elements.Count != array.DeclaredSize)
             {
+                string hint = ErrorHints.GetArraySizeMismatchHint(array.DeclaredSize, array.Elements.Count);
                 RecordError(
-                    $"Array size mismatch: declared {array.DeclaredSize} elements, but found {array.Elements.Count}",
+                    $"Array size mismatch: declared {array.DeclaredSize} elements, but found {array.Elements.Count}. {hint}",
                     startToken.Position,
                     GetEndToken().Position - startToken.Position,
                     startToken.Line,
-                    startToken.Column
+                    startToken.Column,
+                    ErrorCode.ArraySizeMismatch
                 );
             }
 
@@ -864,7 +869,7 @@ namespace ToonTokenizer
 
             if (IsAtEnd() || CurrentToken.Type == TokenType.EndOfFile)
             {
-                RecordError(ParserErrorMessages.UnexpectedEndOfInput, CurrentToken);
+                RecordError(ParserErrorMessages.UnexpectedEndOfInput, CurrentToken, false, ErrorCode.UnexpectedEndOfInput);
                 return new NullValueNode();
             }
 
@@ -939,7 +944,7 @@ namespace ToonTokenizer
                     }.WithPositionFrom(token);
 
                 default:
-                    RecordError(string.Format(ParserErrorMessages.UnexpectedToken, token.Type), token);
+                    RecordError(string.Format(ParserErrorMessages.UnexpectedToken, token.Type), token, false, ErrorCode.UnexpectedToken);
                     Advance(); // Skip the unexpected token
                     return new NullValueNode();
             }
@@ -998,17 +1003,17 @@ namespace ToonTokenizer
         }
 
         // Convenience methods for common skip patterns
-        private void SkipWhitespace() => 
+        private void SkipWhitespace() =>
             Skip(SkipOptions.Whitespace | SkipOptions.IndentDedent);
 
-        private void SkipWhitespaceAndComments() => 
-            Skip(SkipOptions.Whitespace | SkipOptions.Newlines | SkipOptions.Comments | 
+        private void SkipWhitespaceAndComments() =>
+            Skip(SkipOptions.Whitespace | SkipOptions.Newlines | SkipOptions.Comments |
                  SkipOptions.IndentDedent | SkipOptions.Invalid);
 
-        private void SkipNonDelimiterWhitespace() => 
+        private void SkipNonDelimiterWhitespace() =>
             Skip(SkipOptions.Whitespace | SkipOptions.IndentDedent | SkipOptions.NonTabWhitespaceOnly);
 
-        private void SkipWhitespaceExceptTabDelimiter() => 
+        private void SkipWhitespaceExceptTabDelimiter() =>
             Skip(SkipOptions.Whitespace | SkipOptions.IndentDedent | SkipOptions.RespectTabDelimiter);
 
         private int GetCurrentIndentation()
@@ -1286,12 +1291,14 @@ namespace ToonTokenizer
             // Validate array size (§6.1 compliance)
             if (array.Elements.Count != array.DeclaredSize)
             {
+                string hint = ErrorHints.GetArraySizeMismatchHint(array.DeclaredSize, array.Elements.Count);
                 RecordError(
-                    $"Array size mismatch: declared {array.DeclaredSize} elements, but found {array.Elements.Count}",
+                    $"Array size mismatch: declared {array.DeclaredSize} elements, but found {array.Elements.Count}. {hint}",
                     startToken.Position,
                     GetEndToken().Position - startToken.Position,
                     startToken.Line,
-                    startToken.Column
+                    startToken.Column,
+                    ErrorCode.ArraySizeMismatch
                 );
             }
 

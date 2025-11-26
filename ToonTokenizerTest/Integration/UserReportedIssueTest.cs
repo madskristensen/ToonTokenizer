@@ -27,7 +27,7 @@ namespace ToonTokenizerTest.Integration
             Assert.IsNotNull(result, "Result should not be null");
             Assert.IsTrue(result.HasErrors, "Result should have errors");
             Assert.IsNotEmpty(result.Errors, "Errors collection should not be empty");
-            Assert.Contains("Unterminated string", result.Errors[0].Message, "Error message should mention unterminated string");
+            Assert.Contains("Unterminated", result.Errors[0].Message, "Error message should mention unterminated string");
             
             // Document should still be provided (might have partial content)
             Assert.IsNotNull(result.Document, "Document should not be null");
@@ -44,7 +44,7 @@ task: Our favorite hikes together""";
             // Should return true - parser continues after line 1
             Assert.IsTrue(success, "TryParse should return true for recoverable errors");
             Assert.IsTrue(result.HasErrors, "Result should have errors");
-            Assert.Contains("Unterminated string", result.Errors[0].Message);
+            Assert.Contains("Unterminated", result.Errors[0].Message);
             
             // Should have parsed the first line successfully
             Assert.IsNotNull(result.Document);
