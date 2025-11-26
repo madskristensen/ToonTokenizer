@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 
 using ToonTokenizer.Ast;
 
@@ -16,6 +15,9 @@ namespace ToonTokenizer
         private int _position;
         private readonly Stack<Delimiter> _delimiterStack;
         private readonly List<ToonError> _errors;
+
+        // Constants
+        private const int AverageTokenLength = 10;
 
         public ToonParser(List<Token> tokens)
         {
@@ -46,24 +48,7 @@ namespace ToonTokenizer
 
             if (skipToNextProperty)
             {
-                // Try to recover by finding the next property or end of document
-                while (!IsAtEnd() && CurrentToken.Type != TokenType.EndOfFile)
-                {
-                    // Look for next property start (identifier/string at start of line after newline)
-                    if (CurrentToken.Type == TokenType.Newline)
-                    {
-                        Advance();
-                        SkipWhitespaceAndComments();
-                        if (!IsAtEnd() && (CurrentToken.Type == TokenType.Identifier || CurrentToken.Type == TokenType.String))
-                        {
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        Advance();
-                    }
-                }
+                RecoverToNextProperty();
             }
         }
 
@@ -74,6 +59,45 @@ namespace ToonTokenizer
         {
             _errors.Add(new ToonError(message, position, length, line, column));
         }
+
+        /// <summary>
+        /// Recovers from an error by advancing to the next property definition.
+        /// </summary>
+        private void RecoverToNextProperty()
+        {
+            while (!IsAtEnd() && CurrentToken.Type != TokenType.EndOfFile)
+            {
+                if (CurrentToken.Type == TokenType.Newline)
+                {
+                    Advance();
+                    SkipWhitespaceAndComments();
+                    if (!IsAtEnd() && IsPropertyStart())
+                    {
+                        break;
+                    }
+                }
+                else
+                {
+                    Advance();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks if the current token could be the start of a property.
+        /// </summary>
+        private bool IsPropertyStart() =>
+            CurrentToken.Type == TokenType.Identifier || CurrentToken.Type == TokenType.String;
+
+        /// <summary>
+        /// Gets the token to use as the start position for the current parsing context.
+        /// </summary>
+        private Token GetStartToken() => _position > 0 ? _tokens[_position - 1] : CurrentToken;
+
+        /// <summary>
+        /// Gets the token to use as the end position for the current parsing context.
+        /// </summary>
+        private Token GetEndToken() => _position > 0 ? _tokens[_position - 1] : CurrentToken;
 
         /// <summary>
         /// Parses the tokens into a TOON document AST.
@@ -108,23 +132,7 @@ namespace ToonTokenizer
                     {
                         // Record error and try to recover
                         RecordError(ex.Message, ex.Position, ex.Length, ex.Line, ex.Column);
-                        // Skip to next property to recover
-                        while (!IsAtEnd() && CurrentToken.Type != TokenType.EndOfFile)
-                        {
-                            if (CurrentToken.Type == TokenType.Newline)
-                            {
-                                Advance();
-                                SkipWhitespaceAndComments();
-                                if (!IsAtEnd() && (CurrentToken.Type == TokenType.Identifier || CurrentToken.Type == TokenType.String))
-                                {
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                Advance();
-                            }
-                        }
+                        RecoverToNextProperty();
                     }
                 }
                 else
@@ -159,7 +167,7 @@ namespace ToonTokenizer
             // Parse key
             if (CurrentToken.Type != TokenType.Identifier && CurrentToken.Type != TokenType.String)
             {
-                RecordError($"Expected property key", CurrentToken);
+                RecordError(ParserErrorMessages.ExpectedPropertyKey, CurrentToken);
                 return null;
             }
 
@@ -204,7 +212,7 @@ namespace ToonTokenizer
 
                 if (CurrentToken.Type != TokenType.RightBracket)
                 {
-                    RecordError($"Expected ']'", CurrentToken);
+                    RecordError(ParserErrorMessages.ExpectedRightBracket, CurrentToken);
                     // Try to recover by finding the next colon
                     while (!IsAtEnd() && CurrentToken.Type != TokenType.Colon && CurrentToken.Type != TokenType.Newline)
                     {
@@ -274,7 +282,7 @@ namespace ToonTokenizer
                 }
                 if (CurrentToken.Type != TokenType.Colon)
                 {
-                    RecordError($"Expected ':' after property key", CurrentToken);
+                    RecordError(ParserErrorMessages.ExpectedColonAfterKey, CurrentToken);
                     // Skip to the next line to recover (avoid multiple errors for same line)
                     while (!IsAtEnd() && CurrentToken.Type != TokenType.Newline && CurrentToken.Type != TokenType.EndOfFile)
                     {
@@ -426,7 +434,7 @@ namespace ToonTokenizer
                     }
                     else if (CurrentToken.Type != TokenType.RightBrace)
                     {
-                        RecordError($"Expected delimiter or '}}' at line {CurrentToken.Line}", CurrentToken);
+                        RecordError(ParserErrorMessages.ExpectedDelimiterOrBrace(CurrentToken.Line), CurrentToken);
                         hasError = true;
                         // Try to recover by skipping to }
                         while (!IsAtEnd() && CurrentToken.Type != TokenType.RightBrace && CurrentToken.Type != TokenType.Colon)
@@ -437,7 +445,7 @@ namespace ToonTokenizer
                 }
                 else
                 {
-                    RecordError($"Expected field name in schema at line {CurrentToken.Line}", CurrentToken);
+                    RecordError(ParserErrorMessages.ExpectedFieldNameInSchemaAtLine(CurrentToken.Line), CurrentToken);
                     hasError = true;
                     // Try to recover by skipping to } or :
                     while (!IsAtEnd() && CurrentToken.Type != TokenType.RightBrace && CurrentToken.Type != TokenType.Colon)
@@ -449,7 +457,7 @@ namespace ToonTokenizer
 
             if (CurrentToken.Type != TokenType.RightBrace)
             {
-                RecordError($"Expected '}}' at line {CurrentToken.Line}", CurrentToken);
+                RecordError(ParserErrorMessages.ExpectedRightBraceAtLine(CurrentToken.Line), CurrentToken);
                 // Skip to } or : to recover
                 while (!IsAtEnd() && CurrentToken.Type != TokenType.RightBrace && CurrentToken.Type != TokenType.Colon)
                 {
@@ -470,7 +478,7 @@ namespace ToonTokenizer
         private ObjectNode ParseObject(int indentLevel)
         {
             var obj = new ObjectNode();
-            var startToken = _position > 0 ? _tokens[_position - 1] : CurrentToken;
+            var startToken = GetStartToken();
 
             SkipWhitespaceAndComments();
 
@@ -528,7 +536,7 @@ namespace ToonTokenizer
                 table.Schema.Add(field);
             }
 
-            var startToken = _position > 0 ? _tokens[_position - 1] : CurrentToken;
+            var startToken = GetStartToken();
 
 
             SkipWhitespaceAndComments();
@@ -547,7 +555,7 @@ namespace ToonTokenizer
                 // Safety check: prevent infinite loops
                 if (_position == lastPosition)
                 {
-                    RecordError("Parser stuck in infinite loop in ParseTableArray", CurrentToken);
+                    RecordError(ParserErrorMessages.InfiniteLoopDetected(nameof(ParseTableArray)), CurrentToken);
                     Advance(); // Force progress
                 }
                 lastPosition = _position;
@@ -568,12 +576,7 @@ namespace ToonTokenizer
                     break;
 
                 // Only parse a row if the next token is a value (not a comment/whitespace)
-                if (CurrentToken.Type == TokenType.String ||
-                    CurrentToken.Type == TokenType.Identifier ||
-                    CurrentToken.Type == TokenType.Number ||
-                    CurrentToken.Type == TokenType.True ||
-                    CurrentToken.Type == TokenType.False ||
-                    CurrentToken.Type == TokenType.Null)
+                if (CurrentToken.Type.IsValueToken())
                 {
                     var row = ParseTableRowFlexible(schema.Count);
                     table.Rows.Add(row);
@@ -585,17 +588,13 @@ namespace ToonTokenizer
                 }
             }
 
+            var endToken = GetEndToken();
             table.StartLine = startToken.Line;
             table.StartColumn = startToken.Column;
             table.StartPosition = startToken.Position;
-
-            if (_position > 0)
-            {
-                var endToken = _tokens[_position - 1];
-                table.EndLine = endToken.Line;
-                table.EndColumn = endToken.Column;
-                table.EndPosition = endToken.Position;
-            }
+            table.EndLine = endToken.Line;
+            table.EndColumn = endToken.Column;
+            table.EndPosition = endToken.Position;
 
             return table;
         }
@@ -615,12 +614,7 @@ namespace ToonTokenizer
                        CurrentToken.Type != TokenType.Dedent &&
                        CurrentToken.Type != TokenType.Comment)
                 {
-                    if (CurrentToken.Type == TokenType.String ||
-                        CurrentToken.Type == TokenType.Identifier ||
-                        CurrentToken.Type == TokenType.Number ||
-                        CurrentToken.Type == TokenType.True ||
-                        CurrentToken.Type == TokenType.False ||
-                        CurrentToken.Type == TokenType.Null)
+                    if (CurrentToken.Type.IsValueToken())
                     {
                         cellTokens.Add(CurrentToken);
                         Advance();
@@ -650,12 +644,7 @@ namespace ToonTokenizer
                        CurrentToken.Type != TokenType.Dedent &&
                        (row.Count < expectedFields - 1 || (row.Count == expectedFields - 1 && CurrentToken.Type != TokenType.Comment)))
                 {
-                    if (CurrentToken.Type == TokenType.String ||
-                        CurrentToken.Type == TokenType.Identifier ||
-                        CurrentToken.Type == TokenType.Number ||
-                        CurrentToken.Type == TokenType.True ||
-                        CurrentToken.Type == TokenType.False ||
-                        CurrentToken.Type == TokenType.Null)
+                    if (CurrentToken.Type.IsValueToken())
                     {
                         cellTokens.Add(CurrentToken);
                         Advance();
@@ -686,7 +675,7 @@ namespace ToonTokenizer
                     }
                     else
                     {
-                        RecordError($"Expected {activeDelimiter} delimiter between values at line {CurrentToken.Line}", CurrentToken);
+                        RecordError(ParserErrorMessages.ExpectedDelimiter(activeDelimiter, CurrentToken.Line), CurrentToken);
                         // Add null values for remaining fields and stop
                         while (row.Count < expectedFields)
                         {
@@ -734,7 +723,7 @@ namespace ToonTokenizer
                     }
                     else
                     {
-                        RecordError($"Expected delimiter at line {CurrentToken.Line}, column {CurrentToken.Column}", CurrentToken);
+                        RecordError(ParserErrorMessages.ExpectedDelimiterAtPosition(CurrentToken.Line, CurrentToken.Column), CurrentToken);
                         // Add nulls for remaining values and stop
                         while (array.Elements.Count < size)
                         {
@@ -791,7 +780,7 @@ namespace ToonTokenizer
 
             if (IsAtEnd() || CurrentToken.Type == TokenType.EndOfFile)
             {
-                RecordError("Unexpected end of input while parsing value", CurrentToken);
+                RecordError(ParserErrorMessages.UnexpectedEndOfInput, CurrentToken);
                 return new NullValueNode();
             }
 
@@ -805,12 +794,7 @@ namespace ToonTokenizer
                        CurrentToken.Type != TokenType.Comment &&
                        CurrentToken.Type != TokenType.EndOfFile)
                 {
-                    if (CurrentToken.Type == TokenType.String ||
-                        CurrentToken.Type == TokenType.Identifier ||
-                        CurrentToken.Type == TokenType.Number ||
-                        CurrentToken.Type == TokenType.True ||
-                        CurrentToken.Type == TokenType.False ||
-                        CurrentToken.Type == TokenType.Null)
+                    if (CurrentToken.Type.IsValueToken())
                     {
                         valueTokens.Add(CurrentToken);
                         Advance();
@@ -871,7 +855,7 @@ namespace ToonTokenizer
                     }.WithPositionFrom(token);
 
                 default:
-                    RecordError($"Unexpected token {token.Type} while parsing value", token);
+                    RecordError(string.Format(ParserErrorMessages.UnexpectedToken, token.Type), token);
                     Advance(); // Skip the unexpected token
                     return new NullValueNode();
             }
@@ -925,29 +909,6 @@ namespace ToonTokenizer
             {
                 // Column numbers are 1-based; indent is column-1
                 indent = Math.Max(0, _tokens[pos].Column - 1);
-            }
-
-            return indent;
-        }
-
-        private int GetIndentationAt(int position)
-        {
-            if (position >= _tokens.Count)
-                return 0;
-
-            int indent = 0;
-            int pos = position;
-
-            // Look back to find the start of the line
-            while (pos > 0 && _tokens[pos - 1].Type != TokenType.Newline)
-            {
-                pos--;
-            }
-
-            // Count spaces at the start of the line
-            if (pos < _tokens.Count && _tokens[pos].Type == TokenType.Whitespace)
-            {
-                indent = _tokens[pos].Value.Length;
             }
 
             return indent;
@@ -1026,7 +987,7 @@ namespace ToonTokenizer
         private ArrayNode ParseExpandedArray(int size, int indentLevel)
         {
             var array = new ArrayNode { DeclaredSize = size };
-            var startToken = _position > 0 ? _tokens[_position - 1] : CurrentToken;
+            var startToken = GetStartToken();
 
             SkipWhitespaceAndComments();
 
@@ -1044,7 +1005,7 @@ namespace ToonTokenizer
                 // Safety check: prevent infinite loops
                 if (_position == lastPosition)
                 {
-                    RecordError("Parser stuck in infinite loop in ParseExpandedArray", CurrentToken);
+                    RecordError(ParserErrorMessages.InfiniteLoopDetected(nameof(ParseExpandedArray)), CurrentToken);
                     Advance(); // Force progress
                 }
                 lastPosition = _position;
@@ -1130,7 +1091,7 @@ namespace ToonTokenizer
 
                         if (CurrentToken.Type != TokenType.RightBracket)
                         {
-                            RecordError($"Expected ']' at line {CurrentToken.Line}", CurrentToken);
+                            RecordError(ParserErrorMessages.ExpectedRightBracketAtLine(CurrentToken.Line), CurrentToken);
                             // Skip to next colon or newline
                             while (!IsAtEnd() && CurrentToken.Type != TokenType.Colon && CurrentToken.Type != TokenType.Newline)
                             {
@@ -1150,7 +1111,7 @@ namespace ToonTokenizer
 
                         if (CurrentToken.Type != TokenType.Colon)
                         {
-                            RecordError($"Expected ':' after array header at line {CurrentToken.Line}", CurrentToken);
+                            RecordError(ParserErrorMessages.ExpectedColonAfterArrayHeader(CurrentToken.Line), CurrentToken);
                             // Skip the malformed array item
                             while (!IsAtEnd() && CurrentToken.Type != TokenType.Newline)
                             {
@@ -1189,7 +1150,7 @@ namespace ToonTokenizer
                                     }
                                     else
                                     {
-                                        RecordError($"Expected delimiter at line {CurrentToken.Line}", CurrentToken);
+                                        RecordError(ParserErrorMessages.ExpectedDelimiterAtPosition(CurrentToken.Line, CurrentToken.Column), CurrentToken);
                                         // Add nulls for remaining elements
                                         while (nestedArray.Elements.Count < nestedSize)
                                         {
@@ -1224,17 +1185,13 @@ namespace ToonTokenizer
                 }
             }
 
+            var endToken = GetEndToken();
             array.StartLine = startToken.Line;
             array.StartColumn = startToken.Column;
             array.StartPosition = startToken.Position;
-
-            if (_position > 0)
-            {
-                var endToken = _tokens[_position - 1];
-                array.EndLine = endToken.Line;
-                array.EndColumn = endToken.Column;
-                array.EndPosition = endToken.Position;
-            }
+            array.EndLine = endToken.Line;
+            array.EndColumn = endToken.Column;
+            array.EndPosition = endToken.Position;
 
             return array;
         }
@@ -1263,7 +1220,7 @@ namespace ToonTokenizer
 
             // Multi-token: join as string (space-separated) without LINQ
             // Pre-size StringBuilder based on token count
-            var sb = new System.Text.StringBuilder(tokens.Count * 10);
+            var sb = new System.Text.StringBuilder(tokens.Count * AverageTokenLength);
             for (int i = 0; i < tokens.Count; i++)
             {
                 if (i > 0) sb.Append(' ');

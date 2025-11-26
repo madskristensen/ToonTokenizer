@@ -16,9 +16,9 @@ namespace ToonTokenizer
     public class ToonEncoder(ToonEncoderOptions options)
     {
         // Cached Regex patterns for performance (10-15% improvement)
-        private static readonly Regex NumericPattern = new Regex(@"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$", RegexOptions.Compiled);
-        private static readonly Regex LeadingZeroPattern = new Regex(@"^0\d+$", RegexOptions.Compiled);
-        private static readonly Regex KeyPattern = new Regex(@"^[A-Za-z_][A-Za-z0-9_.]*$", RegexOptions.Compiled);
+        private static readonly Regex NumericPattern = new(@"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$", RegexOptions.Compiled);
+        private static readonly Regex LeadingZeroPattern = new(@"^0\d+$", RegexOptions.Compiled);
+        private static readonly Regex KeyPattern = new(@"^[A-Za-z_][A-Za-z0-9_.]*$", RegexOptions.Compiled);
 
         /// <summary>
         /// Creates a new ToonEncoder with default options.
@@ -37,6 +37,12 @@ namespace ToonTokenizer
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
+
+            if (string.IsNullOrWhiteSpace(json))
+                throw new ArgumentException("Input JSON string cannot be empty or whitespace.", nameof(json));
+
+            if (options == null)
+                throw new InvalidOperationException("Options must be initialized before calling EncodeFromJson.");
 
             // Configure options to support JSONC (JSON with comments)
             var jsonOptions = new JsonDocumentOptions
@@ -131,7 +137,7 @@ namespace ToonTokenizer
             using var enumerator = array.EnumerateArray().GetEnumerator();
             if (!enumerator.MoveNext())
                 return false;
-            
+
             var firstElement = enumerator.Current;
             if (firstElement.ValueKind != JsonValueKind.Object)
                 return false;
@@ -168,7 +174,7 @@ namespace ToonTokenizer
             sb.Append('[');
             sb.Append(arrayLength);
             sb.Append("]{");
-            
+
             // Build schema string without LINQ
             for (int i = 0; i < schema.Count; i++)
             {
@@ -181,7 +187,7 @@ namespace ToonTokenizer
             foreach (var element in array.EnumerateArray())
             {
                 WriteIndent(sb, indentLevel + 1);
-                
+
                 int cellIndex = 0;
                 foreach (var prop in element.EnumerateObject())
                 {
@@ -211,7 +217,7 @@ namespace ToonTokenizer
                     {
                         props.Add(prop);
                     }
-                    
+
                     if (props.Count == 0)
                     {
                         // Empty object: remove the trailing space, just "-"
@@ -230,7 +236,7 @@ namespace ToonTokenizer
                             // §10 v3.0: Emit tabular header on hyphen line
                             sb.Append(EscapeKey(firstProp.Name));
                             var arrayLength = firstProp.Value.GetArrayLength();
-                            
+
                             // Get first element and build schema without LINQ
                             using var schemaEnumerator = firstProp.Value.EnumerateArray().GetEnumerator();
                             if (schemaEnumerator.MoveNext())
@@ -241,7 +247,7 @@ namespace ToonTokenizer
                                 {
                                     schema.Add(schemaProp.Name);
                                 }
-                                
+
                                 sb.Append('[');
                                 sb.Append(arrayLength);
                                 sb.Append("]{");
@@ -372,7 +378,7 @@ namespace ToonTokenizer
             using var enumerator = array.EnumerateArray().GetEnumerator();
             if (!enumerator.MoveNext())
                 return false;
-            
+
             var firstElement = enumerator.Current;
             if (firstElement.ValueKind != JsonValueKind.Object)
                 return false;
