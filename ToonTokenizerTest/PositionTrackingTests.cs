@@ -223,22 +223,6 @@ line3: value3";
         }
 
         [TestMethod]
-        public void Token_Classification_ReturnsCorrectType()
-        {
-            var source = "name: \"John\"";
-            var tokens = Toon.Tokenize(source);
-
-            var nameToken = tokens.First(t => t.Type == TokenType.Identifier);
-            Assert.AreEqual("identifier", nameToken.GetClassification());
-
-            var stringToken = tokens.First(t => t.Type == TokenType.String);
-            Assert.AreEqual("string", stringToken.GetClassification());
-
-            var colonToken = tokens.First(t => t.Type == TokenType.Colon);
-            Assert.AreEqual("punctuation", colonToken.GetClassification());
-        }
-
-        [TestMethod]
         public void Token_IsKeyword_ReturnsCorrectValue()
         {
             var lexer = new ToonLexer("true false null");
@@ -303,7 +287,7 @@ age: 30";
             CheckNodePositions(result.Document!);
         }
 
-        private void CheckNodePositions(AstNode node)
+        private static void CheckNodePositions(AstNode node)
         {
             Assert.IsGreaterThan(0, node.StartLine, "Node StartLine should be positive");
             Assert.IsGreaterThan(0, node.StartColumn, "Node StartColumn should be positive");

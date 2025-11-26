@@ -18,6 +18,7 @@ Perfect for LLM prompts, configuration files, and data interchange where token e
 
 - ✅ **Complete lexical analyzer** with all TOON token types
 - ✅ **Full AST parser** with resilient error recovery
+- ✅ **Token-to-AST navigation** - easily map between tokens and syntax nodes
 - ✅ **Tokens included in parse results** - no separate tokenization call needed
 - ✅ **Position tracking** for every token and AST node (line, column, span)
 - ✅ **Resilient parsing** - continues after errors, returns partial AST
@@ -101,6 +102,32 @@ var tokens = Toon.Tokenize(source);
 foreach (var token in tokens)
 {
     Console.WriteLine($"{token.Type}: {token.Value}");
+}
+```
+
+### Navigate from Tokens to AST
+
+```csharp
+var source = "name: John\nage: 30";
+var result = Toon.Parse(source);
+
+// Get a token and find which AST node it belongs to
+var token = result.Tokens.Find(t => t.Value == "30");
+var property = token.GetPropertyNode(result.Document);
+
+Console.WriteLine($"Token '{token.Value}' belongs to property: {property.Key}");
+// Output: Token '30' belongs to property: age
+
+// Or find property at a specific line/column
+var prop = result.GetPropertyAt(line: 2, column: 1);
+Console.WriteLine($"Property at line 2: {prop.Key}");
+// Output: Property at line 2: age
+
+// Find nested properties by path
+var theme = result.FindPropertyByPath("user.settings.theme");
+if (theme?.Value is StringValueNode str)
+{
+    Console.WriteLine($"Theme: {str.Value}");
 }
 ```
 
@@ -326,25 +353,35 @@ bool isStructural = token.IsStructural();  // :, [, ], {, }, ,
 bool isValue = token.IsValue();            // strings, numbers, booleans
 ```
 
-#### AST Extensions
+#### Token to AST Navigation
 
 ```csharp
+using ToonTokenizer;
 using ToonTokenizer.Ast;
 
 var result = Toon.Parse(source);
-var doc = result.Document;
+
+// From token to AST node
+var token = result.Tokens.GetTokenAt(line: 5, column: 3);
+var node = token.GetAstNode(result.Document);
+var property = token.GetPropertyNode(result.Document);
+
+// From parse result directly
+var nodeAtPosition = result.GetNodeAtPosition(42);
+var nodeForToken = result.GetNodeForToken(myToken);
+var propertyAt = result.GetPropertyAt(line: 3, column: 5);
 
 // Get all properties (including nested)
-var allProps = doc.GetAllProperties();
+var allProps = result.GetAllProperties();
 
-// Find by path
-var theme = doc.FindProperty("user.settings.theme");
+// Find by path (dot notation)
+var theme = result.FindPropertyByPath("user.settings.theme");
+var email = result.FindPropertyByPath("user.email");
 
-// Get nesting depth
-int depth = property.GetDepth();
-
-// Debug output
-Console.WriteLine(doc.ToDebugString());
+if (theme?.Value is StringValueNode str)
+{
+    Console.WriteLine($"Theme: {str.Value}");
+}
 ```
 
 ### Visitor Pattern
@@ -413,22 +450,33 @@ public IEnumerable<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
 public IEnumerable<Completion> GetCompletions(int line, int column)
 {
     var result = Toon.Parse(documentText);
-    var token = result.Tokens.GetTokenAt(line, column);
     
+    // Find the property we're currently in
+    var property = result.GetPropertyAt(line, column);
+    
+    if (property != null)
+    {
+        // Context-aware suggestions based on property type
+        if (property.Value is ObjectNode)
+        {
+            // Suggest nested property names
+            yield return new Completion("theme");
+            yield return new Completion("enabled");
+        }
+        else if (property.Value is ArrayNode)
+        {
+            // Suggest array-specific completions
+            yield return new Completion("[size]");
+        }
+    }
+    
+    var token = result.Tokens.GetTokenAt(line, column);
     if (token?.Type == TokenType.Colon)
     {
         // After colon: suggest value types
         yield return new Completion("true");
         yield return new Completion("false");
         yield return new Completion("null");
-    }
-    else if (result.Document != null)
-    {
-        // Suggest property names from document
-        foreach (var prop in result.Document.Properties)
-        {
-            yield return new Completion(prop.Key);
-        }
     }
 }
 ```
@@ -576,8 +624,6 @@ Typical parse performance on modern hardware:
 ## Documentation
 
 - **Quick Start**: See examples above
-- **Full Specification**: [spec.md](spec.md)
-- **Resilient Parsing**: [RESILIENT_PARSING.md](RESILIENT_PARSING.md)
 - **Token Access**: [Examples/TokensInParseResult.md](Examples/TokensInParseResult.md)
 - **API Documentation**: XML docs included in package
 
@@ -635,17 +681,6 @@ This library is independent from the TOON specification but implements it faithf
 - **Reference Implementation (TypeScript)**: https://github.com/toon-format/toon
 - **This Library**: https://github.com/madskristensen/ToonTokenizer
 - **NuGet Package**: https://www.nuget.org/packages/ToonTokenizer/
-
-## Version History
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
-
-**Current Version**: 1.0.0
-- Complete TOON v3.0 support
-- Resilient parsing
-- Tokens in parse results
-- Extension methods
-- 230+ tests
 
 ## Support
 

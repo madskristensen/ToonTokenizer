@@ -10,23 +10,16 @@ namespace ToonTokenizer
     /// <summary>
     /// Encodes data into TOON format.
     /// </summary>
-    public class ToonEncoder
+    /// <remarks>
+    /// Creates a new ToonEncoder with the specified options.
+    /// </remarks>
+    public class ToonEncoder(ToonEncoderOptions options)
     {
-        private readonly ToonEncoderOptions _options;
-
         /// <summary>
         /// Creates a new ToonEncoder with default options.
         /// </summary>
         public ToonEncoder() : this(new ToonEncoderOptions())
         {
-        }
-
-        /// <summary>
-        /// Creates a new ToonEncoder with the specified options.
-        /// </summary>
-        public ToonEncoder(ToonEncoderOptions options)
-        {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         /// <summary>
@@ -41,18 +34,18 @@ namespace ToonTokenizer
                 throw new ArgumentNullException(nameof(json));
 
             // Configure options to support JSONC (JSON with comments)
-            var options = new JsonDocumentOptions
+            var jsonOptions = new JsonDocumentOptions
             {
                 CommentHandling = JsonCommentHandling.Skip,  // Ignore comments
                 AllowTrailingCommas = true                    // Allow trailing commas
             };
 
-            using var document = JsonDocument.Parse(json, options);
+            using var document = JsonDocument.Parse(json, jsonOptions);
             var sb = new StringBuilder();
 
             if (document.RootElement.ValueKind == JsonValueKind.Object)
             {
-                EncodeObject(document.RootElement, sb, 0, _options.Delimiter);
+                EncodeObject(document.RootElement, sb, 0, options.Delimiter);
             }
             else if (document.RootElement.ValueKind == JsonValueKind.Array)
             {
@@ -60,13 +53,13 @@ namespace ToonTokenizer
                 sb.Append("items[");
                 sb.Append(document.RootElement.GetArrayLength());
                 sb.Append("]:");
-                EncodeArrayElements(document.RootElement, sb, 0, _options.Delimiter);
+                EncodeArrayElements(document.RootElement, sb, 0, options.Delimiter);
             }
             else
             {
                 // Root primitive - encode with a wrapper property
                 sb.Append("value: ");
-                EncodeValue(document.RootElement, sb, _options.Delimiter);
+                EncodeValue(document.RootElement, sb, options.Delimiter);
             }
 
             return sb.ToString().TrimEnd();
@@ -91,7 +84,7 @@ namespace ToonTokenizer
                     int arrayLength = value.GetArrayLength();
 
                     // Check if this can be encoded as a table array
-                    if (_options.UseTableArrays && TryEncodeAsTableArray(value, sb, indentLevel, activeDelimiter))
+                    if (options.UseTableArrays && TryEncodeAsTableArray(value, sb, indentLevel, activeDelimiter))
                     {
                         // Successfully encoded as table array
                     }
@@ -117,7 +110,7 @@ namespace ToonTokenizer
                 {
                     sb.Append(": ");
                     // Object field values use document delimiter for quoting decisions
-                    EncodeValue(value, sb, _options.Delimiter);
+                    EncodeValue(value, sb, options.Delimiter);
                     sb.Append('\n');
                 }
             }
@@ -198,7 +191,7 @@ namespace ToonTokenizer
 
                         // Check if first field is a tabular array
                         if (firstProp.Value.ValueKind == JsonValueKind.Array &&
-                            _options.UseTableArrays &&
+                            options.UseTableArrays &&
                             IsTabularArray(firstProp.Value))
                         {
                             // §10 v3.0: Emit tabular header on hyphen line
@@ -239,7 +232,7 @@ namespace ToonTokenizer
                                 else
                                 {
                                     sb.Append(": ");
-                                    EncodeValue(value, sb, _options.Delimiter);
+                                    EncodeValue(value, sb, options.Delimiter);
                                     sb.Append('\n');
                                 }
                             }
@@ -261,7 +254,7 @@ namespace ToonTokenizer
                             else
                             {
                                 sb.Append(": ");
-                                EncodeValue(value, sb, _options.Delimiter);
+                                EncodeValue(value, sb, options.Delimiter);
                                 sb.Append('\n');
                             }
 
@@ -283,7 +276,7 @@ namespace ToonTokenizer
                                 else
                                 {
                                     sb.Append(": ");
-                                    EncodeValue(value, sb, _options.Delimiter);
+                                    EncodeValue(value, sb, options.Delimiter);
                                     sb.Append('\n');
                                 }
                             }
@@ -355,7 +348,7 @@ namespace ToonTokenizer
         {
             int arrayLength = value.GetArrayLength();
 
-            if (_options.UseTableArrays && TryEncodeAsTableArray(value, sb, indentLevel, activeDelimiter))
+            if (options.UseTableArrays && TryEncodeAsTableArray(value, sb, indentLevel, activeDelimiter))
             {
                 // Successfully encoded as table array
             }
@@ -565,7 +558,7 @@ namespace ToonTokenizer
 
         private void WriteIndent(StringBuilder sb, int indentLevel)
         {
-            sb.Append(new string(' ', indentLevel * _options.IndentSize));
+            sb.Append(new string(' ', indentLevel * options.IndentSize));
         }
     }
 

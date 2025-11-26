@@ -77,42 +77,5 @@ namespace ToonTokenizer
                    token.Type == TokenType.False ||
                    token.Type == TokenType.Null;
         }
-
-        /// <summary>
-        /// Gets a classification for syntax highlighting purposes.
-        /// </summary>
-        public static string GetClassification(this Token token)
-        {
-            switch (token.Type)
-            {
-                case TokenType.String:
-                    return "string";
-                case TokenType.Number:
-                    return "number";
-                case TokenType.True:
-                case TokenType.False:
-                    return "keyword.boolean";
-                case TokenType.Null:
-                    return "keyword.null";
-                case TokenType.Identifier:
-                    return "identifier";
-                case TokenType.Colon:
-                case TokenType.Comma:
-                case TokenType.LeftBracket:
-                case TokenType.RightBracket:
-                case TokenType.LeftBrace:
-                case TokenType.RightBrace:
-                    return "punctuation";
-                case TokenType.Comment:
-                    return "comment";
-                case TokenType.Whitespace:
-                case TokenType.Newline:
-                case TokenType.Indent:
-                case TokenType.Dedent:
-                    return "whitespace";
-                default:
-                    return "other";
-            }
-        }
     }
 }
