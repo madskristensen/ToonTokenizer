@@ -52,7 +52,7 @@ namespace ToonTokenizer
             return $"{Type}({Value}) at {Line}:{Column}";
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is Token other)
             {
