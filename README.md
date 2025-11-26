@@ -25,9 +25,10 @@ Perfect for LLM prompts, configuration files, and data interchange where token e
 - ✅ **Rich error reporting** - collects all errors with precise locations
 - ✅ **Visitor pattern** for AST traversal and transformation
 - ✅ **Extension methods** for syntax highlighting and IDE integration
-- ✅ **Battle-tested** with 230+ unit tests
+- ✅ **TOON spec §6.1 compliance** - array size validation (detects size mismatches)
+- ✅ **Battle-tested** with 410+ unit tests
 
-**Targets:** .NET Standard 2.0 (maximum compatibility) and .NET 10
+**Targets:** .NET Standard 2.0 (maximum compatibility)
 
 ## Installation
 
@@ -561,7 +562,7 @@ What insights can you provide?
 - Resilient parsing with error recovery
 
 ### 🎯 Production Ready
-- 230+ unit tests covering edge cases
+- 410+ unit tests covering edge cases
 - Battle-tested on complex real-world data
 - Handles malformed input gracefully
 - Comprehensive error reporting
@@ -596,6 +597,7 @@ Key features:
 - ✅ Table array detection
 - ✅ Delimiter scoping rules
 - ✅ Escape sequence handling
+- ✅ Array size validation per §6.1 (detects undersized arrays)
 
 ## Platform Support
 
@@ -666,6 +668,7 @@ dotnet test
 Test coverage:
 - Lexer: Token generation, escape sequences, position tracking
 - Parser: All node types, error recovery, edge cases
+- Validation: Array size validation, string format validation, number format validation
 - Extensions: Helper methods, visitor pattern
 - Integration: Round-trip encoding/decoding
 
