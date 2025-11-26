@@ -17,11 +17,9 @@ namespace ToonTokenizerTest.Parser
         {
             // Comment should be ignored, array should have 3 elements
             var source = "items[3]: a,b,c # This is a comment";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var array = (ArrayNode)result.Document!.Properties[0].Value;
-            Assert.HasCount(3, array.Elements);
+            ArrayNode array = ToonTestHelpers.ParseAndGetValue<ArrayNode>(source);
+            ToonTestHelpers.AssertArraySize(array, 3);
             Assert.AreEqual("a", ((StringValueNode)array.Elements[0]).Value);
             Assert.AreEqual("b", ((StringValueNode)array.Elements[1]).Value);
             Assert.AreEqual("c", ((StringValueNode)array.Elements[2]).Value);
@@ -34,13 +32,13 @@ namespace ToonTokenizerTest.Parser
             var source = @"items[3]: a,
   # comment line
   b,c";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Should handle gracefully - either parse successfully or return error
             Assert.IsNotNull(result);
             if (result.IsSuccess)
             {
-                var array = (ArrayNode)result.Document!.Properties[0].Value;
+                var array = (ArrayNode)result.Document.Properties[0].Value;
                 Assert.IsGreaterThanOrEqualTo(2, array.Elements.Count);
             }
         }
@@ -49,11 +47,9 @@ namespace ToonTokenizerTest.Parser
         public void Parse_DoubleSlashCommentInArray_IgnoresComment()
         {
             var source = "items[2]: x,y // comment";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var array = (ArrayNode)result.Document!.Properties[0].Value;
-            Assert.HasCount(2, array.Elements);
+            ArrayNode array = ToonTestHelpers.ParseAndGetValue<ArrayNode>(source);
+            ToonTestHelpers.AssertArraySize(array, 2);
         }
 
         #endregion
@@ -66,11 +62,9 @@ namespace ToonTokenizerTest.Parser
             var source = @"data[2]{id,name}:
   1,Alice # First user
   2,Bob   # Second user";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var table = (TableArrayNode)result.Document!.Properties[0].Value;
-            Assert.HasCount(2, table.Rows);
+            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
+            ToonTestHelpers.AssertTableStructure(table, 2, "id", "name");
             Assert.AreEqual("Alice", ((StringValueNode)table.Rows[0][1]).Value);
             Assert.AreEqual("Bob", ((StringValueNode)table.Rows[1][1]).Value);
         }
@@ -82,11 +76,9 @@ namespace ToonTokenizerTest.Parser
   1,Alice
   # This is a comment between rows
   2,Bob";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var table = (TableArrayNode)result.Document!.Properties[0].Value;
-            Assert.HasCount(2, table.Rows);
+            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
+            ToonTestHelpers.AssertTableStructure(table, 2, "id", "name");
         }
 
         [TestMethod]
@@ -94,14 +86,14 @@ namespace ToonTokenizerTest.Parser
         {
             var source = @"data[1]{id,name}: # Comment after schema
   1,Alice";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // The parser may have difficulty with comment directly after schema colon
             // but should at least return a result (possibly with errors)
             Assert.IsNotNull(result);
             if (result.IsSuccess)
             {
-                var table = (TableArrayNode)result.Document!.Properties[0].Value;
+                var table = (TableArrayNode)result.Document.Properties[0].Value;
                 Assert.HasCount(1, table.Rows);
             }
             else
@@ -119,10 +111,9 @@ namespace ToonTokenizerTest.Parser
         public void Parse_CommentAfterSimpleValue_IgnoresComment()
         {
             var source = "name: John # This is John's name";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            var value = (StringValueNode)result.Document.Properties[0].Value;
             Assert.AreEqual("John", value.Value);
         }
 
@@ -134,10 +125,9 @@ namespace ToonTokenizerTest.Parser
   prop1: value1
   # Second property below
   prop2: value2";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var obj = (ObjectNode)result.Document!.Properties[0].Value;
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            var obj = (ObjectNode)result.Document.Properties[0].Value;
             Assert.HasCount(2, obj.Properties);
         }
 
@@ -150,10 +140,9 @@ namespace ToonTokenizerTest.Parser
         {
             var source = @"# This is a hash comment
 value: test";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(1, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(1, result.Document.Properties);
         }
 
         [TestMethod]
@@ -161,10 +150,9 @@ value: test";
         {
             var source = @"// This is a double-slash comment
 value: test";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(1, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(1, result.Document.Properties);
         }
 
         [TestMethod]
@@ -174,10 +162,9 @@ value: test";
 value1: test1
 // Double-slash comment
 value2: test2";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(2, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(2, result.Document.Properties);
         }
 
         [TestMethod]
@@ -187,10 +174,9 @@ value2: test2";
 # Comment 2
 # Comment 3
 value: test";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(1, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(1, result.Document.Properties);
         }
 
         #endregion
@@ -202,10 +188,9 @@ value: test";
         {
             // Hash inside quotes should be preserved as part of string
             var source = "tag: \"#hashtag\"";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            var value = (StringValueNode)result.Document.Properties[0].Value;
             Assert.AreEqual("#hashtag", value.Value);
         }
 
@@ -213,10 +198,9 @@ value: test";
         public void Parse_DoubleSlashInQuotedString_PreservesSlashes()
         {
             var source = "url: \"http://example.com\"";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            var value = (StringValueNode)result.Document.Properties[0].Value;
             Assert.AreEqual("http://example.com", value.Value);
         }
 
@@ -225,10 +209,10 @@ value: test";
         {
             // Unquoted value should stop at # (comment start)
             var source = "value: text#notcomment";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            var value = (StringValueNode)result.Document.Properties[0].Value;
             // Should be "text" or "text#notcomment" depending on lexer behavior
             Assert.Contains("text", value.Value);
         }
@@ -243,10 +227,10 @@ value: test";
             var source = @"# Just comments
 // Nothing else
 # More comments";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             Assert.IsFalse(result.IsSuccess);
-            Assert.IsEmpty(result.Document!.Properties);
+            Assert.IsEmpty(result.Document.Properties);
         }
 
         [TestMethod]
@@ -255,10 +239,9 @@ value: test";
             var source = @"value: test
    # Comment with leading spaces
 value2: test2";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(2, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(2, result.Document.Properties);
         }
 
         [TestMethod]
@@ -268,10 +251,9 @@ value2: test2";
 
 # Comment after blank line
 value2: test2";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(2, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(2, result.Document.Properties);
         }
 
         #endregion
@@ -282,20 +264,17 @@ value2: test2";
         public void Parse_CommentAtEndOfFile_ParsesCorrectly()
         {
             var source = "value: test\n# Final comment";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(1, result.Document!.Properties);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
+            Assert.HasCount(1, result.Document.Properties);
         }
 
         [TestMethod]
         public void Parse_CommentWithSpecialCharacters_ParsesCorrectly()
         {
             var source = "value: test # Comment with @#$%^&*() special chars!";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
             Assert.AreEqual("test", value.Value);
         }
 
@@ -303,10 +282,8 @@ value2: test2";
         public void Parse_CommentWithUnicode_ParsesCorrectly()
         {
             var source = "value: test # Comment with emoji 👍 and 日本語";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
             Assert.AreEqual("test", value.Value);
         }
 
@@ -315,10 +292,8 @@ value2: test2";
         {
             var longComment = new string('x', 1000);
             var source = $"value: test # {longComment}";
-            var result = Toon.Parse(source);
 
-            Assert.IsTrue(result.IsSuccess);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
             Assert.AreEqual("test", value.Value);
         }
 

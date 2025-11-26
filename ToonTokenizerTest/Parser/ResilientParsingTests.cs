@@ -16,11 +16,9 @@ city: New York
 salary invalid
 country: USA
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsTrue(result.HasErrors, "Should have errors");
             Assert.IsGreaterThan(0, result.Errors.Count, "Should collect multiple errors");
-            Assert.IsNotNull(result.Document, "Document should be available");
             Assert.IsGreaterThan(0, result.Document.Properties.Count, "Should have parsed valid properties");
 
             // Should have parsed the valid properties (name, city, country)
@@ -40,9 +38,8 @@ invalid line without colon
 age: 25
 email: alice@example.com
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsTrue(result.HasErrors, "Should have error for invalid line");
             Assert.HasCount(1, result.Errors, "Should have exactly one error");
             Assert.HasCount(5, result.Document.Properties, "Should parse 4 valid properties");
 
@@ -61,10 +58,7 @@ name: John
 items[3: a, b, c
 city: NYC
 ";
-            var result = Toon.Parse(source);
-
-            Assert.IsTrue(result.HasErrors, "Should have bracket error");
-            Assert.IsNotNull(result.Document);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
             // Should have parsed name (items might be partial, city should be there)
             var keys = result.Document.Properties.Select(p => p.Key).ToList();
@@ -80,10 +74,7 @@ users[2]{id name}:
   2,Bob
 status: active
 ";
-            var result = Toon.Parse(source);
-
-            Assert.IsTrue(result.HasErrors, "Should have schema format error");
-            Assert.IsNotNull(result.Document);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
             // Should still try to parse other properties
             var keys = result.Document.Properties.Select(p => p.Key).ToList();
@@ -97,7 +88,7 @@ status: active
         public void TryParse_WithErrors_ReturnsTrue()
         {
             var source = "invalid without colon";
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
 
             Assert.IsTrue(success, "TryParse should return true for completed parse");
             Assert.IsTrue(result.HasErrors, "Result should have errors");
@@ -107,7 +98,7 @@ status: active
         [TestMethod]
         public void TryParse_OnlyCatastrophicFailure_ReturnsFalse()
         {
-            bool success = Toon.TryParse(null!, out var result);
+            bool success = Toon.TryParse(null!, out ToonParseResult? result);
 
             Assert.IsFalse(success, "Null input should return false");
             Assert.IsTrue(result.HasErrors, "Should have error");
@@ -118,12 +109,11 @@ status: active
         public void Parse_ErrorPositionInformation_IsAccurate()
         {
             var source = "name John";  // Missing colon after "name"
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsTrue(result.HasErrors);
             Assert.HasCount(1, result.Errors);
 
-            var error = result.Errors[0];
+            ToonError error = result.Errors[0];
             Assert.AreEqual(1, error.Line, "Error should be on line 1");
             Assert.IsGreaterThan(0, error.Column, "Should have valid column");
             Assert.IsGreaterThanOrEqualTo(0, error.Position, "Should have valid position");
@@ -139,9 +129,8 @@ line3: value3
 line4 also invalid
 line5: value5";
 
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsTrue(result.HasErrors);
             Assert.IsGreaterThan(1, result.Errors.Count, "Should have multiple errors");
 
             // Verify error line numbers
@@ -154,7 +143,7 @@ line5: value5";
         public void Parse_PartialArray_FillsWithNulls()
         {
             var source = "numbers[5]: 1, 2, 3";  // Declares 5 but provides only 3
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // May have error for missing elements or might just fill with nulls
             Assert.IsNotNull(result.Document);
@@ -172,21 +161,16 @@ line5: value5";
             var source = @"data[2]{id,name}:
   1 Alice
   2,Bob";
-
-            var result = Toon.Parse(source);
-
-            Assert.IsTrue(result.HasErrors, "Should have delimiter error");
-            Assert.IsNotNull(result.Document);
+            _ = ToonTestHelpers.ParseWithErrors(source);
         }
 
         [TestMethod]
         public void Parse_EmptyDocument_ReturnsEmptyWithNoErrors()
         {
             var source = "";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseFailure(source);
 
             // Empty is not an error, just results in no properties
-            Assert.IsFalse(result.IsSuccess, "Empty source should not be success");
             Assert.IsNotNull(result.Document);
             Assert.IsEmpty(result.Document.Properties);
         }
@@ -199,10 +183,8 @@ name: John Doe
 age: 30
 city: New York
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.IsFalse(result.HasErrors, "Valid document should have no errors");
-            Assert.IsTrue(result.IsSuccess, "Valid document should succeed");
             Assert.IsEmpty(result.Errors);
             Assert.HasCount(3, result.Document.Properties);
         }
@@ -216,9 +198,8 @@ prop2 invalid
 prop3: value3
 prop4: value4
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsTrue(result.HasErrors);
             Assert.IsGreaterThan(2, result.Document.Properties.Count, "Should recover and parse subsequent properties");
 
             var keys = result.Document.Properties.Select(p => p.Key).ToList();
@@ -236,12 +217,11 @@ user:
   age invalid
   city: Boston
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsNotNull(result.Document);
             Assert.HasCount(1, result.Document.Properties, "Should have user property");
 
-            var userProp = result.Document.Properties[0];
+            PropertyNode userProp = result.Document.Properties[0];
             Assert.AreEqual("user", userProp.Key);
 
             if (userProp.Value is ObjectNode obj)
@@ -261,11 +241,9 @@ city: NYC
 data{id name}: test
 country: USA
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseWithErrors(source);
 
-            Assert.IsTrue(result.HasErrors);
             Assert.IsGreaterThan(1, result.Errors.Count, "Should have multiple different error types");
-            Assert.IsNotNull(result.Document);
 
             // Should still parse some valid properties
             var keys = result.Document.Properties.Select(p => p.Key).ToList();
@@ -278,17 +256,8 @@ country: USA
         public void Parse_EmailAddress_ParsesAsUnquotedString()
         {
             var source = "email: alice@example.com";
-            var result = Toon.Parse(source);
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
-            Assert.IsFalse(result.HasErrors, "Should have no errors");
-            Assert.IsTrue(result.IsSuccess, "Should succeed");
-            Assert.HasCount(1, result.Document.Properties, "Should have exactly one property");
-
-            var property = result.Document.Properties[0];
-            Assert.AreEqual("email", property.Key);
-
-            Assert.IsInstanceOfType(property.Value, typeof(StringValueNode));
-            var value = (StringValueNode)property.Value;
             Assert.AreEqual("alice@example.com", value.Value, "Email should be parsed as complete unquoted string");
         }
     }

@@ -13,7 +13,7 @@ namespace ToonTokenizerTest
         public void UnterminatedString_HasCorrectErrorCode()
         {
             string toon = @"name: ""unterminated";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
             Assert.HasCount(1, result.Errors);
@@ -26,11 +26,11 @@ namespace ToonTokenizerTest
         public void InvalidEscapeSequence_HasCorrectErrorCode()
         {
             string toon = @"text: ""hello\xworld""";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
             Assert.IsNotEmpty(result.Errors);
-            var escapeError = result.Errors.Find(e => e.Code == ErrorCode.InvalidEscapeSequence);
+            ToonError? escapeError = result.Errors.Find(e => e.Code == ErrorCode.InvalidEscapeSequence);
             Assert.IsNotNull(escapeError);
             Assert.Contains("Valid escape sequences", escapeError.Message);
             Assert.Contains("Fix:", escapeError.Message);
@@ -40,10 +40,10 @@ namespace ToonTokenizerTest
         public void MissingColon_HasCorrectErrorCode()
         {
             string toon = @"name ""value""";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
-            var colonError = result.Errors.Find(e => e.Code == ErrorCode.ExpectedColon);
+            ToonError? colonError = result.Errors.Find(e => e.Code == ErrorCode.ExpectedColon);
             Assert.IsNotNull(colonError);
             Assert.Contains("Expected ':'", colonError.Message);
         }
@@ -52,10 +52,10 @@ namespace ToonTokenizerTest
         public void ArraySizeMismatch_HasCorrectErrorCodeAndHint()
         {
             string toon = @"items[3]: one,two";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
-            var sizeError = result.Errors.Find(e => e.Code == ErrorCode.ArraySizeMismatch);
+            ToonError? sizeError = result.Errors.Find(e => e.Code == ErrorCode.ArraySizeMismatch);
             Assert.IsNotNull(sizeError);
             Assert.Contains("Array size mismatch", sizeError.Message);
             Assert.Contains("declared 3", sizeError.Message);
@@ -67,15 +67,15 @@ namespace ToonTokenizerTest
         public void ArraySizeMismatch_TooManyElements_HasHelpfulHint()
         {
             string toon = @"items[2]: one,two,three";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
             // The error might be about expecting delimiter or array size
             // Either way, there should be an error with helpful message
             Assert.IsGreaterThan(0, result.Errors.Count);
-            
+
             // Check if we have an array size mismatch error
-            var sizeError = result.Errors.Find(e => e.Code == ErrorCode.ArraySizeMismatch);
+            ToonError? sizeError = result.Errors.Find(e => e.Code == ErrorCode.ArraySizeMismatch);
             if (sizeError != null)
             {
                 // If we got a size error, check for helpful hints
@@ -88,10 +88,10 @@ namespace ToonTokenizerTest
         {
             string toon = @"users[2]{id,name}:
   1,Alice";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
-            var tableError = result.Errors.Find(e => e.Code == ErrorCode.TableSizeMismatch);
+            ToonError? tableError = result.Errors.Find(e => e.Code == ErrorCode.TableSizeMismatch);
             Assert.IsNotNull(tableError);
             Assert.Contains("Table array size mismatch", tableError.Message);
             Assert.Contains("declared 2", tableError.Message);
@@ -103,14 +103,14 @@ namespace ToonTokenizerTest
         public void ExpectedPropertyKey_HasCorrectErrorCode()
         {
             string toon = @"123: value";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             // Parser is resilient, but should have logged an error or handled it
             // Note: Numbers might be parsed as unquoted strings in some contexts
             // This test verifies error code when property key is truly invalid
             if (result.HasErrors)
             {
-                var keyError = result.Errors.Find(e => e.Code == ErrorCode.ExpectedPropertyKey);
+                ToonError? keyError = result.Errors.Find(e => e.Code == ErrorCode.ExpectedPropertyKey);
                 if (keyError != null)
                 {
                     Assert.Contains("Expected property key", keyError.Message);
@@ -122,10 +122,10 @@ namespace ToonTokenizerTest
         public void UnexpectedEndOfInput_HasCorrectErrorCode()
         {
             string toon = @"name:";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
-            var eofError = result.Errors.Find(e => e.Code == ErrorCode.UnexpectedEndOfInput);
+            ToonError? eofError = result.Errors.Find(e => e.Code == ErrorCode.UnexpectedEndOfInput);
             Assert.IsNotNull(eofError);
             Assert.Contains("Unexpected end of input", eofError.Message);
         }
@@ -134,11 +134,11 @@ namespace ToonTokenizerTest
         public void ErrorToString_IncludesErrorCode()
         {
             string toon = @"items[3]: one,two";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
             // Find an error that has a code
-            var errorWithCode = result.Errors.Find(e => !string.IsNullOrEmpty(e.Code));
+            ToonError? errorWithCode = result.Errors.Find(e => !string.IsNullOrEmpty(e.Code));
             Assert.IsNotNull(errorWithCode, "Should have at least one error with a code");
             
             var errorString = errorWithCode.ToString();
@@ -154,7 +154,7 @@ name ""missing colon""
 items[3]: one,two
 text: ""unterminated
 ";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             Assert.IsTrue(result.HasErrors);
             Assert.IsGreaterThanOrEqualTo(2, result.Errors.Count);
@@ -168,7 +168,7 @@ text: ""unterminated
         public void EmptyArray_HasHelpfulHint()
         {
             string toon = @"items[3]:";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             // Parser might find unexpected end of input or parse an empty array
             // If it parses as an array, it should have a size mismatch
@@ -189,7 +189,7 @@ text: ""unterminated
         {
             string toon = @"users[2]{id,name}:
   1,Alice";
-            var result = Toon.Parse(toon);
+            ToonParseResult result = Toon.Parse(toon);
 
             // Should have a table size mismatch error since we declared 2 rows but only have 1
             Assert.IsTrue(result.HasErrors, "Should have errors for table size mismatch");

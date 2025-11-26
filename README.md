@@ -28,7 +28,7 @@ Perfect for LLM prompts, configuration files, and data interchange where token e
 - ✅ **Visitor pattern** for AST traversal and transformation
 - ✅ **Extension methods** for syntax highlighting and IDE integration
 - ✅ **TOON spec §6.1 compliance** - array size validation (detects size mismatches)
-- ✅ **Battle-tested** with 422+ unit tests
+- ✅ **Battle-tested** with 644 unit tests (100% passing)
 
 **Targets:** .NET Standard 2.0 (maximum compatibility)
 
@@ -629,7 +629,7 @@ What insights can you provide?
 - Resilient parsing with error recovery
 
 ### 🎯 Production Ready
-- 422+ unit tests covering edge cases
+- 644 unit tests covering edge cases (100% passing)
 - Battle-tested on complex real-world data
 - Handles malformed input gracefully
 - Comprehensive error reporting with standardized error codes

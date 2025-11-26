@@ -10,12 +10,12 @@ namespace ToonTokenizerTest.Integration
         public void GetAstNode_SimpleProperty_ReturnsPropertyNode()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var token = result.Tokens.Find(t => t.Value == "John");
+            Token? token = result.Tokens.Find(t => t.Value == "John");
             Assert.IsNotNull(token);
 
-            var node = token.GetAstNode(result.Document);
+            AstNode? node = token.GetAstNode(result.Document);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<StringValueNode>(node);
         }
@@ -24,12 +24,12 @@ namespace ToonTokenizerTest.Integration
         public void GetPropertyNode_FromValueToken_ReturnsContainingProperty()
         {
             var source = "age: 30";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var token = result.Tokens.Find(t => t.Value == "30");
+            Token? token = result.Tokens.Find(t => t.Value == "30");
             Assert.IsNotNull(token);
 
-            var property = token.GetPropertyNode(result.Document);
+            PropertyNode? property = token.GetPropertyNode(result.Document);
             Assert.IsNotNull(property);
             Assert.AreEqual("age", property.Key);
         }
@@ -38,12 +38,12 @@ namespace ToonTokenizerTest.Integration
         public void GetPropertyNode_FromKeyToken_ReturnsProperty()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var token = result.Tokens.Find(t => t.Value == "name" && t.Type == TokenType.Identifier);
+            Token? token = result.Tokens.Find(t => t.Value == "name" && t.Type == TokenType.Identifier);
             Assert.IsNotNull(token);
 
-            var property = token.GetPropertyNode(result.Document);
+            PropertyNode? property = token.GetPropertyNode(result.Document);
             Assert.IsNotNull(property);
             Assert.AreEqual("name", property.Key);
         }
@@ -52,13 +52,13 @@ namespace ToonTokenizerTest.Integration
         public void GetNodeAtPosition_ValidPosition_ReturnsNode()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Position of "John" token
-            var token = result.Tokens.Find(t => t.Value == "John");
+            Token? token = result.Tokens.Find(t => t.Value == "John");
             Assert.IsNotNull(token);
 
-            var node = result.GetNodeAtPosition(token.Position);
+            AstNode? node = result.GetNodeAtPosition(token.Position);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<StringValueNode>(node);
         }
@@ -67,9 +67,9 @@ namespace ToonTokenizerTest.Integration
         public void GetPropertyAt_ValidLineColumn_ReturnsProperty()
         {
             var source = "name: John\nage: 30";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.GetPropertyAt(line: 2, column: 1);
+            PropertyNode? property = result.GetPropertyAt(line: 2, column: 1);
             Assert.IsNotNull(property);
             Assert.AreEqual("age", property.Key);
         }
@@ -78,9 +78,9 @@ namespace ToonTokenizerTest.Integration
         public void GetPropertyAt_InvalidPosition_ReturnsNull()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.GetPropertyAt(line: 99, column: 99);
+            PropertyNode? property = result.GetPropertyAt(line: 99, column: 99);
             Assert.IsNull(property);
         }
 
@@ -88,9 +88,9 @@ namespace ToonTokenizerTest.Integration
         public void GetAllProperties_FlatDocument_ReturnsAllProperties()
         {
             var source = "name: John\nage: 30\ncity: Boulder";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var allProps = result.GetAllProperties();
+            List<PropertyNode> allProps = result.GetAllProperties();
             Assert.HasCount(3, allProps);
             Assert.AreEqual("name", allProps[0].Key);
             Assert.AreEqual("age", allProps[1].Key);
@@ -107,17 +107,17 @@ user:
     theme: dark
 city: Boulder
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var allProps = result.GetAllProperties();
+            List<PropertyNode> allProps = result.GetAllProperties();
             // user (top), name (nested in user), settings (nested in user), theme (nested in settings), city (top) = 5 total
             Assert.HasCount(5, allProps);
 
             // Check we have nested properties
-            var themeProperty = allProps.Find(p => p.Key == "theme");
+            PropertyNode? themeProperty = allProps.Find(p => p.Key == "theme");
             Assert.IsNotNull(themeProperty);
 
-            var cityProperty = allProps.Find(p => p.Key == "city");
+            PropertyNode? cityProperty = allProps.Find(p => p.Key == "city");
             Assert.IsNotNull(cityProperty);
         }
 
@@ -125,9 +125,9 @@ city: Boulder
         public void FindPropertyByPath_SimplePath_ReturnsProperty()
         {
             var source = "name: John\nage: 30";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.FindPropertyByPath("name");
+            PropertyNode? property = result.FindPropertyByPath("name");
             Assert.IsNotNull(property);
             Assert.AreEqual("name", property.Key);
 
@@ -145,9 +145,9 @@ user:
   settings:
     theme: dark
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.FindPropertyByPath("user.settings.theme");
+            PropertyNode? property = result.FindPropertyByPath("user.settings.theme");
             Assert.IsNotNull(property);
             Assert.AreEqual("theme", property.Key);
 
@@ -160,9 +160,9 @@ user:
         public void FindPropertyByPath_InvalidPath_ReturnsNull()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.FindPropertyByPath("nonexistent.path");
+            PropertyNode? property = result.FindPropertyByPath("nonexistent.path");
             Assert.IsNull(property);
         }
 
@@ -173,10 +173,10 @@ user:
 user:
   name: John
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Try to go deeper than possible
-            var property = result.FindPropertyByPath("user.name.invalid");
+            PropertyNode? property = result.FindPropertyByPath("user.name.invalid");
             Assert.IsNull(property);
         }
 
@@ -184,12 +184,12 @@ user:
         public void GetNodeForToken_WithToken_ReturnsNode()
         {
             var source = "enabled: true";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var token = result.Tokens.Find(t => t.Type == TokenType.True);
+            Token? token = result.Tokens.Find(t => t.Type == TokenType.True);
             Assert.IsNotNull(token);
 
-            var node = result.GetNodeForToken(token);
+            AstNode? node = result.GetNodeForToken(token);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<BooleanValueNode>(node);
         }
@@ -198,12 +198,12 @@ user:
         public void GetAstNode_ArrayElement_ReturnsValueNode()
         {
             var source = "colors[3]: red,green,blue";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var token = result.Tokens.Find(t => t.Value == "green");
+            Token? token = result.Tokens.Find(t => t.Value == "green");
             Assert.IsNotNull(token);
 
-            var node = token.GetAstNode(result.Document);
+            AstNode? node = token.GetAstNode(result.Document);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<StringValueNode>(node);
         }
@@ -216,12 +216,12 @@ users[2]{id,name}:
   1,Alice
   2,Bob
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var token = result.Tokens.Find(t => t.Value == "Alice");
+            Token? token = result.Tokens.Find(t => t.Value == "Alice");
             Assert.IsNotNull(token);
 
-            var property = token.GetPropertyNode(result.Document);
+            PropertyNode? property = token.GetPropertyNode(result.Document);
             Assert.IsNotNull(property);
             Assert.AreEqual("users", property.Key);
         }
@@ -235,9 +235,9 @@ users[2]{id,name}:
   1,Alice
   2,Bob
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var allProps = result.GetAllProperties();
+            List<PropertyNode> allProps = result.GetAllProperties();
 
             // Should have exactly 2 properties: names and users
             Assert.HasCount(2, allProps);
@@ -253,13 +253,13 @@ user:
   settings:
     notifications: true
 ";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Find the "notifications" property
-            var token = result.Tokens.Find(t => t.Value == "notifications");
+            Token? token = result.Tokens.Find(t => t.Value == "notifications");
             Assert.IsNotNull(token);
 
-            var property = result.GetPropertyAt(token.Line, token.Column);
+            PropertyNode? property = result.GetPropertyAt(token.Line, token.Column);
             Assert.IsNotNull(property);
             Assert.AreEqual("notifications", property.Key);
         }
@@ -268,10 +268,10 @@ user:
         public void GetNodeAtPosition_DocumentRoot_ReturnsDocument()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Position 0 should return the document or first property
-            var node = result.GetNodeAtPosition(0);
+            AstNode? node = result.GetNodeAtPosition(0);
             Assert.IsNotNull(node);
             // Should be either ToonDocument or PropertyNode
             Assert.IsTrue(node is ToonDocument || node is PropertyNode);
@@ -281,9 +281,9 @@ user:
         public void FindPropertyByPath_EmptyPath_ReturnsNull()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.FindPropertyByPath("");
+            PropertyNode? property = result.FindPropertyByPath("");
             Assert.IsNull(property);
         }
 
@@ -291,9 +291,9 @@ user:
         public void FindPropertyByPath_NullPath_ReturnsNull()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.FindPropertyByPath(null!);
+            PropertyNode? property = result.FindPropertyByPath(null!);
             Assert.IsNull(property);
         }
 
@@ -301,7 +301,7 @@ user:
         public void GetPropertyNode_NullDocument_ReturnsNull()
         {
             var token = new Token(TokenType.String, "test", 1, 1, 0, 4);
-            var property = token.GetPropertyNode(null!);
+            PropertyNode? property = token.GetPropertyNode(null!);
             Assert.IsNull(property);
         }
 
@@ -309,7 +309,7 @@ user:
         public void GetNodeAtPosition_NullResult_ReturnsNull()
         {
             ToonParseResult? result = null;
-            var node = result!.GetNodeAtPosition(0);
+            AstNode? node = result!.GetNodeAtPosition(0);
             Assert.IsNull(node);
         }
     }

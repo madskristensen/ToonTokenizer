@@ -10,8 +10,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithoutQuotes_ParsesCorrectly()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("John", value.Value);
         }
@@ -20,8 +19,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithDoubleQuotes_ParsesCorrectly()
         {
             var source = "name: \"John Doe\"";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("John Doe", value.Value);
         }
@@ -30,8 +28,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithSingleQuotes_ParsesCorrectly()
         {
             var source = "name: 'John Doe'";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("John Doe", value.Value);
         }
@@ -40,8 +37,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithEscapedNewline_ParsesCorrectly()
         {
             var source = "text: \"Line1\\nLine2\"";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("Line1\nLine2", value.Value);
         }
@@ -50,8 +46,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithEscapedTab_ParsesCorrectly()
         {
             var source = "text: \"Col1\\tCol2\"";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("Col1\tCol2", value.Value);
         }
@@ -60,8 +55,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithEscapedBackslash_ParsesCorrectly()
         {
             var source = "path: \"C:\\\\Users\\\\Name\"";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("C:\\Users\\Name", value.Value);
         }
@@ -70,8 +64,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_WithEscapedQuote_ParsesCorrectly()
         {
             var source = "quote: \"He said \\\"Hello\\\"\"";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("He said \"Hello\"", value.Value);
         }
@@ -80,8 +73,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_StringValue_Empty_ParsesCorrectly()
         {
             var source = "text: \"\"";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("", value.Value);
         }
@@ -90,8 +82,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_PositiveInteger_ParsesCorrectly()
         {
             var source = "count: 42";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(42.0, value.Value);
             Assert.IsTrue(value.IsInteger);
@@ -101,8 +92,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_NegativeInteger_ParsesCorrectly()
         {
             var source = "temperature: -15";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(-15.0, value.Value);
             Assert.IsTrue(value.IsInteger);
@@ -112,8 +102,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_Zero_ParsesCorrectly()
         {
             var source = "value: 0";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(0.0, value.Value);
             Assert.IsTrue(value.IsInteger);
@@ -123,8 +112,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_PositiveFloat_ParsesCorrectly()
         {
             var source = "pi: 3.14159";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(3.14159, value.Value, 0.00001);
             Assert.IsFalse(value.IsInteger);
@@ -134,8 +122,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_NegativeFloat_ParsesCorrectly()
         {
             var source = "value: -2.5";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(-2.5, value.Value, 0.0001);
             Assert.IsFalse(value.IsInteger);
@@ -145,8 +132,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_ScientificNotationPositive_ParsesCorrectly()
         {
             var source = "avogadro: 6.022e23";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(6.022e23, value.Value, 1e20);
             Assert.IsFalse(value.IsInteger);
@@ -156,8 +142,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_ScientificNotationNegative_ParsesCorrectly()
         {
             var source = "small: 1.5e-10";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(1.5e-10, value.Value, 1e-15);
             Assert.IsFalse(value.IsInteger);
@@ -167,8 +152,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NumberValue_ScientificNotationUppercaseE_ParsesCorrectly()
         {
             var source = "value: 2.5E3";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(2500.0, value.Value, 0.1);
             Assert.IsFalse(value.IsInteger);
@@ -178,8 +162,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_BooleanValue_True_ParsesCorrectly()
         {
             var source = "active: true";
-            var result = Toon.Parse(source);
-            var value = (BooleanValueNode)result.Document!.Properties[0].Value;
+            BooleanValueNode value = ToonTestHelpers.ParseAndGetValue<BooleanValueNode>(source);
 
             Assert.IsTrue(value.Value);
             Assert.AreEqual("true", value.RawValue);
@@ -189,8 +172,7 @@ namespace ToonTokenizerTest.Parser
         public void Parse_BooleanValue_False_ParsesCorrectly()
         {
             var source = "active: false";
-            var result = Toon.Parse(source);
-            var value = (BooleanValueNode)result.Document!.Properties[0].Value;
+            BooleanValueNode value = ToonTestHelpers.ParseAndGetValue<BooleanValueNode>(source);
 
             Assert.IsFalse(value.Value);
             Assert.AreEqual("false", value.RawValue);
@@ -200,11 +182,9 @@ namespace ToonTokenizerTest.Parser
         public void Parse_NullValue_ParsesCorrectly()
         {
             var source = "value: null";
-            var result = Toon.Parse(source);
-            var value = result.Document!.Properties[0].Value;
+            NullValueNode value = ToonTestHelpers.ParseAndGetValue<NullValueNode>(source);
 
-            Assert.IsInstanceOfType<NullValueNode>(value);
-            Assert.AreEqual("null", ((NullValueNode)value).RawValue);
+            Assert.AreEqual("null", value.RawValue);
         }
 
         [TestMethod]
@@ -215,22 +195,21 @@ intVal: 42
 floatVal: 3.14
 boolVal: true
 nullVal: null";
-            var result = Toon.Parse(source);
+            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.HasCount(5, result.Document!.Properties);
-            Assert.IsInstanceOfType<StringValueNode>(result.Document!.Properties[0].Value);
-            Assert.IsInstanceOfType<NumberValueNode>(result.Document!.Properties[1].Value);
-            Assert.IsInstanceOfType<NumberValueNode>(result.Document!.Properties[2].Value);
-            Assert.IsInstanceOfType<BooleanValueNode>(result.Document!.Properties[3].Value);
-            Assert.IsInstanceOfType<NullValueNode>(result.Document!.Properties[4].Value);
+            Assert.HasCount(5, result.Document.Properties);
+            Assert.IsInstanceOfType<StringValueNode>(result.Document.Properties[0].Value);
+            Assert.IsInstanceOfType<NumberValueNode>(result.Document.Properties[1].Value);
+            Assert.IsInstanceOfType<NumberValueNode>(result.Document.Properties[2].Value);
+            Assert.IsInstanceOfType<BooleanValueNode>(result.Document.Properties[3].Value);
+            Assert.IsInstanceOfType<NullValueNode>(result.Document.Properties[4].Value);
         }
 
         [TestMethod]
         public void Parse_ValueNode_RawValue_IsPreserved()
         {
             var source = "count: 42";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual("42", value.RawValue);
         }
@@ -239,8 +218,7 @@ nullVal: null";
         public void Parse_StringValue_WithUnderscores_ParsesCorrectly()
         {
             var source = "name: snake_case_value";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.IsTrue(value.Value.Contains("snake") || value.Value.Contains("case"));
         }
@@ -250,8 +228,7 @@ nullVal: null";
         {
             // Valid TOON: colon after property key
             var source = "name: kebab-case-value";
-            var result = Toon.Parse(source);
-            var value = (StringValueNode)result.Document!.Properties[0].Value;
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
             Assert.AreEqual("kebab-case-value", value.Value);
         }
@@ -260,8 +237,7 @@ nullVal: null";
         public void Parse_NumberValue_VeryLarge_ParsesCorrectly()
         {
             var source = "large: 999999999999";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(999999999999.0, value.Value);
         }
@@ -270,8 +246,7 @@ nullVal: null";
         public void Parse_NumberValue_VerySmall_ParsesCorrectly()
         {
             var source = "small: 0.000001";
-            var result = Toon.Parse(source);
-            var value = (NumberValueNode)result.Document!.Properties[0].Value;
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
             Assert.AreEqual(0.000001, value.Value, 0.0000001);
         }
@@ -281,25 +256,19 @@ nullVal: null";
             var source1 = "val: 05";
             var source2 = "val: 0001";
             var source3 = "val: -01";
-            var doc1 = Toon.Parse(source1);
-            var doc2 = Toon.Parse(source2);
-            var doc3 = Toon.Parse(source3);
-            Assert.IsInstanceOfType<StringValueNode>(doc1.Document!.Properties[0].Value);
-            Assert.AreEqual("05", ((StringValueNode)doc1.Document!.Properties[0].Value).Value);
-            Assert.IsInstanceOfType<StringValueNode>(doc2.Document!.Properties[0].Value);
-            Assert.AreEqual("0001", ((StringValueNode)doc2.Document!.Properties[0].Value).Value);
-            Assert.IsInstanceOfType<StringValueNode>(doc3.Document!.Properties[0].Value);
-            Assert.AreEqual("-01", ((StringValueNode)doc3.Document!.Properties[0].Value).Value);
+            StringValueNode doc1 = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source1);
+            StringValueNode doc2 = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source2);
+            StringValueNode doc3 = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source3);
+            Assert.AreEqual("05", doc1.Value);
+            Assert.AreEqual("0001", doc2.Value);
+            Assert.AreEqual("-01", doc3.Value);
         }
 
         [TestMethod]
         public void Parse_StringValue_InvalidEscape_ReturnsError()
         {
             var source = "text: \"Hello\\xWorld\"";
-            var result = Toon.Parse(source);
-
-            Assert.IsTrue(result.HasErrors, "Should have errors");
-            Assert.Contains("Invalid escape sequence", result.Errors[0].Message);
+            _ = ToonTestHelpers.ParseWithErrors(source, "Invalid escape sequence");
         }
     }
 }

@@ -18,7 +18,7 @@ namespace ToonTokenizerTest.Integration
             
             // TryParse should NOT throw an exception and should return true
             // (resilient parsing - it can still tokenize most of the input)
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
             
             // Should return true because parsing completed (even with errors)
             Assert.IsTrue(success, "TryParse should return true for recoverable errors");
@@ -39,7 +39,7 @@ namespace ToonTokenizerTest.Integration
             var source = @"name: John
 task: Our favorite hikes together""";
             
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
             
             // Should return true - parser continues after line 1
             Assert.IsTrue(success, "TryParse should return true for recoverable errors");
@@ -59,7 +59,7 @@ task: Our favorite hikes together""";
 bad-syntax-line: Our favorite hikes together""
 city: Boston";
             
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
             
             Assert.IsTrue(success, "TryParse should return true");
             Assert.IsTrue(result.HasErrors, "Should have errors");

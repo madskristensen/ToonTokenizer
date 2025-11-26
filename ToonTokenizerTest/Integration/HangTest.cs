@@ -11,7 +11,7 @@ namespace ToonTokenizerTest.Integration
             // This was causing the parser to hang
             var source = "season: spring_2025\"";
 
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Should complete (not hang) and have errors
             Assert.IsTrue(result.HasErrors, "Should have errors");
@@ -24,7 +24,7 @@ namespace ToonTokenizerTest.Integration
         {
             var source = "season: spring_2025\"\nother: value";
 
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Should parse and report error on first line
             Assert.IsTrue(result.HasErrors, "Should have errors");
@@ -39,7 +39,7 @@ namespace ToonTokenizerTest.Integration
         {
             var source = "value: \"no closing quote";
 
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
 
             Assert.IsTrue(success, "Should complete parsing");
             Assert.IsTrue(result.HasErrors, "Should have errors");
@@ -55,7 +55,7 @@ namespace ToonTokenizerTest.Integration
   location: Boulder
   season: spring_2025""";
 
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
             // Should complete (not hang) and have errors
             Assert.IsTrue(result.HasErrors, "Should have errors for unterminated string");
@@ -75,7 +75,7 @@ namespace ToonTokenizerTest.Integration
   location: Boulder
   season: spring_2025""";
 
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
 
             Assert.IsTrue(success, "Should complete parsing");
             Assert.IsTrue(result.HasErrors, "Should have errors");

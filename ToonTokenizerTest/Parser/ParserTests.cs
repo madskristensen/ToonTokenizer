@@ -9,20 +9,20 @@ namespace ToonTokenizerTest.Parser
         [TestMethod]
         public void Parse_EmptyString_ReturnsEmptyDocument()
         {
-            var result = Toon.Parse("");
+            ToonParseResult result = Toon.Parse("");
 
             Assert.IsFalse(result.IsSuccess);
-            Assert.IsEmpty(result.Document!.Properties);
+            Assert.IsEmpty(result.Document.Properties);
         }
 
         [TestMethod]
         public void Parse_SingleProperty_ReturnsDocumentWithOneProperty()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.HasCount(1, result.Document!.Properties);
-            Assert.AreEqual("name", result.Document!.Properties[0].Key);
+            Assert.HasCount(1, doc.Document.Properties);
+            Assert.AreEqual("name", doc.Document.Properties[0].Key);
         }
 
         [TestMethod]
@@ -31,99 +31,77 @@ namespace ToonTokenizerTest.Parser
             var source = @"name: John
 age: 30
 active: true";
-            var result = Toon.Parse(source);
+            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.HasCount(3, result.Document!.Properties);
-            Assert.AreEqual("name", result.Document!.Properties[0].Key);
-            Assert.AreEqual("age", result.Document!.Properties[1].Key);
-            Assert.AreEqual("active", result.Document!.Properties[2].Key);
+            Assert.HasCount(3, doc.Document.Properties);
+            Assert.AreEqual("name", doc.Document.Properties[0].Key);
+            Assert.AreEqual("age", doc.Document.Properties[1].Key);
+            Assert.AreEqual("active", doc.Document.Properties[2].Key);
         }
 
         [TestMethod]
         public void Parse_PropertyWithStringValue_ParsesCorrectly()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
-            Assert.HasCount(1, result.Document!.Properties);
-            Assert.AreEqual("name", result.Document!.Properties[0].Key);
-            Assert.AreEqual("John", ((StringValueNode)result.Document!.Properties[0].Value).Value);
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
+
+            Assert.AreEqual("John", value.Value);
         }
 
         [TestMethod]
         public void Parse_PropertyWithQuotedString_ParsesCorrectly()
         {
             var source = "name: \"John Doe\"";
-            var result = Toon.Parse(source);
+            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(StringValueNode));
-
-            var stringValue = (StringValueNode)property.Value;
-            Assert.AreEqual("John Doe", stringValue.Value);
+            Assert.AreEqual("John Doe", value.Value);
         }
 
         [TestMethod]
         public void Parse_PropertyWithNumber_ParsesCorrectly()
         {
             var source = "age: 30";
-            var result = Toon.Parse(source);
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(NumberValueNode));
-
-            var numberValue = (NumberValueNode)property.Value;
-            Assert.AreEqual(30.0, numberValue.Value);
-            Assert.IsTrue(numberValue.IsInteger);
+            Assert.AreEqual(30.0, value.Value);
+            Assert.IsTrue(value.IsInteger);
         }
 
         [TestMethod]
         public void Parse_PropertyWithFloat_ParsesCorrectly()
         {
             var source = "temperature: 98.6";
-            var result = Toon.Parse(source);
+            NumberValueNode value = ToonTestHelpers.ParseAndGetValue<NumberValueNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(NumberValueNode));
-
-            var numberValue = (NumberValueNode)property.Value;
-            Assert.AreEqual(98.6, numberValue.Value, 0.001);
-            Assert.IsFalse(numberValue.IsInteger);
+            Assert.AreEqual(98.6, value.Value, 0.001);
+            Assert.IsFalse(value.IsInteger);
         }
 
         [TestMethod]
         public void Parse_PropertyWithTrue_ParsesCorrectly()
         {
             var source = "active: true";
-            var result = Toon.Parse(source);
+            BooleanValueNode value = ToonTestHelpers.ParseAndGetValue<BooleanValueNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(BooleanValueNode));
-
-            var boolValue = (BooleanValueNode)property.Value;
-            Assert.IsTrue(boolValue.Value);
+            Assert.IsTrue(value.Value);
         }
 
         [TestMethod]
         public void Parse_PropertyWithFalse_ParsesCorrectly()
         {
             var source = "active: false";
-            var result = Toon.Parse(source);
+            BooleanValueNode value = ToonTestHelpers.ParseAndGetValue<BooleanValueNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(BooleanValueNode));
-
-            var boolValue = (BooleanValueNode)property.Value;
-            Assert.IsFalse(boolValue.Value);
+            Assert.IsFalse(value.Value);
         }
 
         [TestMethod]
         public void Parse_PropertyWithNull_ParsesCorrectly()
         {
             var source = "value: null";
-            var result = Toon.Parse(source);
+            NullValueNode value = ToonTestHelpers.ParseAndGetValue<NullValueNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(property.Value, typeof(NullValueNode));
+            Assert.IsNotNull(value);
         }
 
         [TestMethod]
@@ -132,14 +110,8 @@ active: true";
             var source = @"user:
   name: John
   age: 30";
-            var result = Toon.Parse(source);
+            ObjectNode userObj = ToonTestHelpers.ParseAndGetValue<ObjectNode>(source);
 
-            Assert.HasCount(1, result.Document!.Properties);
-            var userProp = result.Document!.Properties[0];
-            Assert.AreEqual("user", userProp.Key);
-            Assert.IsInstanceOfType(userProp.Value, typeof(ObjectNode));
-
-            var userObj = (ObjectNode)userProp.Value;
             Assert.HasCount(2, userObj.Properties);
             Assert.AreEqual("name", userObj.Properties[0].Key);
             Assert.AreEqual("age", userObj.Properties[1].Key);
@@ -152,20 +124,15 @@ active: true";
   level1:
     level2:
       value: deep";
-            var result = Toon.Parse(source);
+            ObjectNode root = ToonTestHelpers.ParseAndGetValue<ObjectNode>(source);
 
-            var root = result.Document!.Properties[0];
-            Assert.IsInstanceOfType(root.Value, typeof(ObjectNode));
+            var level1 = ((ObjectNode)root.Properties[0].Value);
+            Assert.AreEqual("level1", root.Properties[0].Key);
 
-            var level1 = ((ObjectNode)root.Value).Properties[0];
-            Assert.AreEqual("level1", level1.Key);
-            Assert.IsInstanceOfType(level1.Value, typeof(ObjectNode));
+            var level2 = ((ObjectNode)level1.Properties[0].Value);
+            Assert.AreEqual("level2", level1.Properties[0].Key);
 
-            var level2 = ((ObjectNode)level1.Value).Properties[0];
-            Assert.AreEqual("level2", level2.Key);
-            Assert.IsInstanceOfType(level2.Value, typeof(ObjectNode));
-
-            var value = ((ObjectNode)level2.Value).Properties[0];
+            PropertyNode value = level2.Properties[0];
             Assert.AreEqual("value", value.Key);
         }
 
@@ -173,15 +140,9 @@ active: true";
         public void Parse_InlineArray_ParsesCorrectly()
         {
             var source = "colors[3]: red,green,blue";
-            var result = Toon.Parse(source);
+            ArrayNode array = ToonTestHelpers.ParseAndGetValue<ArrayNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.AreEqual("colors", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(ArrayNode));
-
-            var array = (ArrayNode)property.Value;
-            Assert.AreEqual(3, array.DeclaredSize);
-            Assert.HasCount(3, array.Elements);
+            ToonTestHelpers.AssertArraySize(array, 3);
 
             var firstElement = (StringValueNode)array.Elements[0];
             Assert.AreEqual("red", firstElement.Value);
@@ -193,18 +154,9 @@ active: true";
             var source = @"users[2]{id,name}:
   1,Alice
   2,Bob";
-            var result = Toon.Parse(source);
+            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
 
-            var property = result.Document!.Properties[0];
-            Assert.AreEqual("users", property.Key);
-            Assert.IsInstanceOfType(property.Value, typeof(TableArrayNode));
-
-            var table = (TableArrayNode)property.Value;
-            Assert.AreEqual(2, table.DeclaredSize);
-            Assert.HasCount(2, table.Schema);
-            Assert.AreEqual("id", table.Schema[0]);
-            Assert.AreEqual("name", table.Schema[1]);
-            Assert.HasCount(2, table.Rows);
+            ToonTestHelpers.AssertTableStructure(table, 2, "id", "name");
         }
 
         [TestMethod]
@@ -212,13 +164,9 @@ active: true";
         {
             var source = @"data[1]{a,b,c,d}:
   1,2,3,4";
-            var result = Toon.Parse(source);
+            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
 
-            var property = result.Document!.Properties[0];
-            var table = (TableArrayNode)property.Value;
-
-            Assert.HasCount(4, table.Schema);
-            Assert.HasCount(1, table.Rows);
+            ToonTestHelpers.AssertTableStructure(table, 1, "a", "b", "c", "d");
             Assert.HasCount(4, table.Rows[0]);
         }
 
@@ -230,13 +178,13 @@ count: 5
 items[2]: a,b
 details:
   info: data";
-            var result = Toon.Parse(source);
+            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.HasCount(4, result.Document!.Properties);
-            Assert.IsInstanceOfType(result.Document!.Properties[0].Value, typeof(StringValueNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[1].Value, typeof(NumberValueNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[2].Value, typeof(ArrayNode));
-            Assert.IsInstanceOfType(result.Document!.Properties[3].Value, typeof(ObjectNode));
+            Assert.HasCount(4, doc.Document.Properties);
+            Assert.IsInstanceOfType<StringValueNode>(doc.Document.Properties[0].Value);
+            Assert.IsInstanceOfType<NumberValueNode>(doc.Document.Properties[1].Value);
+            Assert.IsInstanceOfType<ArrayNode>(doc.Document.Properties[2].Value);
+            Assert.IsInstanceOfType<ObjectNode>(doc.Document.Properties[3].Value);
         }
 
         [TestMethod]
@@ -244,9 +192,9 @@ details:
         {
             var source = @"name: John # This is a comment
 age: 30";
-            var result = Toon.Parse(source);
+            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.HasCount(2, result.Document!.Properties);
+            Assert.HasCount(2, doc.Document.Properties);
         }
 
         [TestMethod]
@@ -262,26 +210,26 @@ hikes[2]{id,name,distance}:
   1,Blue Lake Trail,7.5
   2,Ridge Overlook,9.2";
 
-            var result = Toon.Parse(source);
+            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
 
-            Assert.HasCount(3, result.Document!.Properties);
+            Assert.HasCount(3, doc.Document.Properties);
 
             // Check context object
-            var context = result.Document!.Properties[0];
+            PropertyNode context = doc.Document.Properties[0];
             Assert.AreEqual("context", context.Key);
-            Assert.IsInstanceOfType(context.Value, typeof(ObjectNode));
+            Assert.IsInstanceOfType<ObjectNode>(context.Value);
             Assert.HasCount(2, ((ObjectNode)context.Value).Properties);
 
             // Check friends array
-            var friends = result.Document!.Properties[1];
+            PropertyNode friends = doc.Document.Properties[1];
             Assert.AreEqual("friends", friends.Key);
-            Assert.IsInstanceOfType(friends.Value, typeof(ArrayNode));
+            Assert.IsInstanceOfType<ArrayNode>(friends.Value);
             Assert.HasCount(3, ((ArrayNode)friends.Value).Elements);
 
             // Check hikes table
-            var hikes = result.Document!.Properties[2];
+            PropertyNode hikes = doc.Document.Properties[2];
             Assert.AreEqual("hikes", hikes.Key);
-            Assert.IsInstanceOfType(hikes.Value, typeof(TableArrayNode));
+            Assert.IsInstanceOfType<TableArrayNode>(hikes.Value);
             var hikesTable = (TableArrayNode)hikes.Value;
             Assert.HasCount(3, hikesTable.Schema);
             Assert.HasCount(2, hikesTable.Rows);
@@ -291,7 +239,7 @@ hikes[2]{id,name,distance}:
         public void TryParse_ValidInput_ReturnsTrue()
         {
             var source = "name: John";
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
 
             Assert.IsTrue(success);
             Assert.IsEmpty(result.Errors);
@@ -301,7 +249,7 @@ hikes[2]{id,name,distance}:
         public void TryParse_InvalidInput_ReturnsTrue()
         {
             var source = "invalid syntax without colon";
-            bool success = Toon.TryParse(source, out var result);
+            bool success = Toon.TryParse(source, out ToonParseResult? result);
 
             Assert.IsTrue(success, "TryParse should return true for completed parse even with errors");
             Assert.IsNotEmpty(result.Errors);
@@ -311,9 +259,9 @@ hikes[2]{id,name,distance}:
         public void Parse_AstNodePositions_AreTracked()
         {
             var source = "name: John";
-            var result = Toon.Parse(source);
+            ToonParseResult result = Toon.Parse(source);
 
-            var property = result.Document!.Properties[0];
+            PropertyNode property = result.Document.Properties[0];
             Assert.IsGreaterThan(0, property.StartLine);
             Assert.IsGreaterThan(0, property.StartColumn);
             Assert.IsGreaterThanOrEqualTo(0, property.StartPosition);
