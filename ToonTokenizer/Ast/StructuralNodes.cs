@@ -52,6 +52,19 @@ namespace ToonTokenizer.Ast
     /// <summary>
     /// Represents a simple array with elements.
     /// </summary>
+    /// <remarks>
+    /// Arrays in TOON can have an optional declared size: [n]. Per TOON spec §6.1,
+    /// the parser validates that the actual number of elements matches the declared size.
+    /// Use DeclaredSize property to check the declared size (-1 if not specified).
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // Inline array: items[3]: a,b,c
+    /// var array = (ArrayNode)result.Document.Properties[0].Value;
+    /// Console.WriteLine(array.DeclaredSize);  // 3
+    /// Console.WriteLine(array.Elements.Count); // 3
+    /// </code>
+    /// </example>
     public class ArrayNode : AstNode
     {
         /// <summary>
@@ -80,6 +93,21 @@ namespace ToonTokenizer.Ast
     /// Represents a table-style array with schema definition.
     /// Example: arrayName[3]{id,name,value}: ...
     /// </summary>
+    /// <remarks>
+    /// Table arrays are TOON's killer feature for compact data representation.
+    /// The schema defines field names once, and each row provides values in the same order.
+    /// This is significantly more token-efficient than repeating keys in JSON arrays.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// // TOON: users[2]{id,name}: 1,Alice 2,Bob
+    /// var table = (TableArrayNode)result.Document.Properties[0].Value;
+    /// Console.WriteLine(string.Join(",", table.Schema));  // "id,name"
+    /// Console.WriteLine(table.Rows.Count);                 // 2
+    /// Console.WriteLine(table.Rows[0][0]);                 // "1" (first row, id)
+    /// Console.WriteLine(table.Rows[0][1]);                 // "Alice" (first row, name)
+    /// </code>
+    /// </example>
     public class TableArrayNode : AstNode
     {
         /// <summary>

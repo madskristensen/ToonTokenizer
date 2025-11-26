@@ -14,6 +14,22 @@ namespace ToonTokenizer
         /// </summary>
         /// <param name="source">The TOON source text to parse.</param>
         /// <returns>A ToonParseResult containing the parsed document (possibly partial) and any errors.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when source is null.</exception>
+        /// <remarks>
+        /// The parser uses resilient error recovery, meaning it continues parsing after encountering errors.
+        /// This allows language services and IDEs to provide IntelliSense and error highlighting for
+        /// partially valid documents. Check result.HasErrors to determine if parsing was completely successful.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = Toon.Parse("name: John\nage: 30");
+        /// if (result.IsSuccess) {
+        ///     // Access result.Document
+        /// } else {
+        ///     // Check result.Errors for details
+        /// }
+        /// </code>
+        /// </example>
         public static ToonParseResult Parse(string source)
         {
             if (source == null)
@@ -106,6 +122,20 @@ namespace ToonTokenizer
         /// </summary>
         /// <param name="source">The TOON source text to tokenize.</param>
         /// <returns>A list of tokens.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when source is null.</exception>
+        /// <remarks>
+        /// Use this method when you only need the token stream for syntax highlighting or
+        /// lexical analysis without building the full AST. For most cases, use Parse() instead,
+        /// which includes tokens in the result along with the AST.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var tokens = Toon.Tokenize("name: John");
+        /// foreach (var token in tokens) {
+        ///     Console.WriteLine($"{token.Type}: {token.Value}");
+        /// }
+        /// </code>
+        /// </example>
         public static List<Token> Tokenize(string source)
         {
             if (source == null)
@@ -125,6 +155,24 @@ namespace ToonTokenizer
         /// <param name="source">The TOON source text to validate.</param>
         /// <param name="result">Output parameter for the parse result containing document and errors.</param>
         /// <returns>True if parsing completed, false only on catastrophic exceptions.</returns>
+        /// <remarks>
+        /// Unlike traditional TryParse patterns, this method returns true even when parse errors occur.
+        /// It only returns false for catastrophic failures (null source, unexpected exceptions).
+        /// Always check result.IsSuccess or result.HasErrors to determine parse validity.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// if (Toon.TryParse(source, out var result)) {
+        ///     if (result.IsSuccess) {
+        ///         // Valid TOON - no errors
+        ///     } else {
+        ///         // Parse completed with errors - check result.Errors
+        ///     }
+        /// } else {
+        ///     // Catastrophic failure
+        /// }
+        /// </code>
+        /// </example>
         public static bool TryParse(string source, out ToonParseResult result)
         {
             if (string.IsNullOrWhiteSpace(source))

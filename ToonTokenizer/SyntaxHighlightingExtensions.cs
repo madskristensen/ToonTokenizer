@@ -27,6 +27,19 @@ namespace ToonTokenizer
         /// <summary>
         /// Gets the token at a specific position (line and column).
         /// </summary>
+        /// <param name="tokens">The list of tokens to search.</param>
+        /// <param name="line">The line number (1-based).</param>
+        /// <param name="column">The column number (1-based).</param>
+        /// <returns>The token at that position, or null if no token found.</returns>
+        /// <example>
+        /// <code>
+        /// var result = Toon.Parse(source);
+        /// var token = result.Tokens.GetTokenAt(line: 5, column: 10);
+        /// if (token != null) {
+        ///     Console.WriteLine($"Token at 5:10 is {token.Type}: {token.Value}");
+        /// }
+        /// </code>
+        /// </example>
         public static Token? GetTokenAt(this List<Token> tokens, int line, int column)
         {
             return tokens.FirstOrDefault(t =>

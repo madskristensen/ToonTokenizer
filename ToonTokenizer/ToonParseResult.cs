@@ -13,6 +13,8 @@ namespace ToonTokenizer
         /// The parsed TOON document. Always non-null after parsing, even if errors occurred.
         /// Contains a partial AST when errors are present.
         /// </summary>
+        /// <seealso cref="HasErrors"/>
+        /// <seealso cref="IsSuccess"/>
         public ToonDocument Document { get; set; }
 
         /// <summary>

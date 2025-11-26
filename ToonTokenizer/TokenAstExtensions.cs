@@ -29,6 +29,18 @@ namespace ToonTokenizer
         /// <param name="token">The token to find the property for.</param>
         /// <param name="document">The parsed TOON document.</param>
         /// <returns>The PropertyNode containing this token, or null if not found.</returns>
+        /// <remarks>
+        /// Useful for implementing "Go to Definition", hover tooltips, and other IDE features
+        /// that need to map a token position back to its containing property.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = Toon.Parse("name: John\nage: 30");
+        /// var token = result.Tokens.Find(t => t.Value == "30");
+        /// var property = token.GetPropertyNode(result.Document);
+        /// Console.WriteLine(property.Key);  // "age"
+        /// </code>
+        /// </example>
         public static PropertyNode? GetPropertyNode(this Token token, ToonDocument document)
         {
             if (document == null)
@@ -109,6 +121,20 @@ namespace ToonTokenizer
         /// <param name="result">The parse result.</param>
         /// <param name="path">The dot-separated path to the property.</param>
         /// <returns>The PropertyNode at that path, or null if not found.</returns>
+        /// <remarks>
+        /// Paths use dot notation to navigate nested objects. Only works for nested objects,
+        /// not for array elements. Returns null if any segment in the path doesn't exist
+        /// or if a non-object is encountered mid-path.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// var result = Toon.Parse("user:\n  settings:\n    theme: dark");
+        /// var prop = result.FindPropertyByPath("user.settings.theme");
+        /// if (prop?.Value is StringValueNode str) {
+        ///     Console.WriteLine(str.Value);  // "dark"
+        /// }
+        /// </code>
+        /// </example>
         public static PropertyNode? FindPropertyByPath(this ToonParseResult result, string path)
         {
             if (result?.Document == null || string.IsNullOrEmpty(path))
