@@ -1,7 +1,7 @@
 using ToonTokenizer;
 using ToonTokenizer.Ast;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Integration
 {
     [TestClass]
     public class PositionTrackingTests

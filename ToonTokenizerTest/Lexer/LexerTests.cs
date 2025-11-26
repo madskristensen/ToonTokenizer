@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Lexer
 {
     [TestClass]
     public class LexerTests

@@ -1,7 +1,7 @@
 using ToonTokenizer;
 using ToonTokenizer.Ast;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Parser
 {
     [TestClass]
     public class ParserTests
@@ -249,7 +249,7 @@ age: 30";
             Assert.HasCount(2, result.Document!.Properties);
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void Parse_ComplexExample_ParsesCorrectly()
         {
             var source = @"context:

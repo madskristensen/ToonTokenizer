@@ -664,6 +664,19 @@ namespace ToonTokenizer
             }
 
             SetNodePositions(table, startToken, GetEndToken());
+
+            // Validate table array row count (§6.1 compliance)
+            if (table.Rows.Count != table.DeclaredSize)
+            {
+                RecordError(
+                    $"Table array size mismatch: declared {table.DeclaredSize} rows, but found {table.Rows.Count}",
+                    startToken.Position,
+                    GetEndToken().Position - startToken.Position,
+                    startToken.Line,
+                    startToken.Column
+                );
+            }
+
             return table;
         }
 
@@ -744,11 +757,7 @@ namespace ToonTokenizer
                     else
                     {
                         RecordError(ParserErrorMessages.ExpectedDelimiter(activeDelimiter, CurrentToken.Line), CurrentToken);
-                        // Add null values for remaining fields and stop
-                        while (row.Count < expectedFields)
-                        {
-                            row.Add(new NullValueNode());
-                        }
+                        // Stop parsing - row will be incomplete and validation can catch issues
                         break;
                     }
                 }
@@ -792,11 +801,7 @@ namespace ToonTokenizer
                     else
                     {
                         RecordError(ParserErrorMessages.ExpectedDelimiterAtPosition(CurrentToken.Line, CurrentToken.Column), CurrentToken);
-                        // Add nulls for remaining values and stop
-                        while (array.Elements.Count < size)
-                        {
-                            array.Elements.Add(new NullValueNode());
-                        }
+                        // Stop parsing - let size validation catch the mismatch
                         break;
                     }
                 }
@@ -810,6 +815,18 @@ namespace ToonTokenizer
                 array.EndLine = lastElement.EndLine;
                 array.EndColumn = lastElement.EndColumn;
                 array.EndPosition = lastElement.EndPosition;
+            }
+
+            // Validate array size (§6.1 compliance)
+            if (array.Elements.Count != array.DeclaredSize)
+            {
+                RecordError(
+                    $"Array size mismatch: declared {array.DeclaredSize} elements, but found {array.Elements.Count}",
+                    startToken.Position,
+                    GetEndToken().Position - startToken.Position,
+                    startToken.Line,
+                    startToken.Column
+                );
             }
 
             return array;
@@ -1234,11 +1251,7 @@ namespace ToonTokenizer
                                     else
                                     {
                                         RecordError(ParserErrorMessages.ExpectedDelimiterAtPosition(CurrentToken.Line, CurrentToken.Column), CurrentToken);
-                                        // Add nulls for remaining elements
-                                        while (nestedArray.Elements.Count < nestedSize)
-                                        {
-                                            nestedArray.Elements.Add(new NullValueNode());
-                                        }
+                                        // Stop parsing - let size validation catch the mismatch
                                         break;
                                     }
                                 }
@@ -1269,6 +1282,19 @@ namespace ToonTokenizer
             }
 
             SetNodePositions(array, startToken, GetEndToken());
+
+            // Validate array size (§6.1 compliance)
+            if (array.Elements.Count != array.DeclaredSize)
+            {
+                RecordError(
+                    $"Array size mismatch: declared {array.DeclaredSize} elements, but found {array.Elements.Count}",
+                    startToken.Position,
+                    GetEndToken().Position - startToken.Position,
+                    startToken.Line,
+                    startToken.Column
+                );
+            }
+
             return array;
         }
 

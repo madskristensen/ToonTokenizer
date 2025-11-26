@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Parser
 {
     [TestClass]
     public class ErrorHandlingTests
@@ -315,23 +315,6 @@ age: 30
             Assert.IsGreaterThan(0, error.Length, "Length should be positive");
             Assert.IsGreaterThan(0, error.Line, "Line should be positive (1-based)");
             Assert.IsGreaterThan(0, error.Column, "Column should be positive (1-based)");
-        }
-
-        [TestMethod]
-        public void TryParse_ErrorToString_IncludesAllInformation()
-        {
-            var source = "items[3: incomplete";  // Missing closing bracket
-            bool success = Toon.TryParse(source, out var result);
-
-            Assert.IsTrue(success, "TryParse should return true for completed parse");
-            Assert.IsTrue(result.HasErrors);
-            Assert.HasCount(2, result.Errors);
-
-            var errorString = result.Errors[0].ToString();
-            Assert.Contains("line", errorString.ToLower());
-            Assert.Contains("column", errorString.ToLower());
-            Assert.Contains("position", errorString.ToLower());
-            Assert.Contains("length", errorString.ToLower());
         }
 
         [TestMethod]

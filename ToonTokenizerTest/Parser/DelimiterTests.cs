@@ -1,7 +1,7 @@
 using ToonTokenizer;
 using ToonTokenizer.Ast;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Parser
 {
     [TestClass]
     public class DelimiterTests
@@ -109,53 +109,6 @@ namespace ToonTokenizerTest
             Assert.AreEqual("reading", ((StringValueNode)array.Elements[0]).Value);
             Assert.AreEqual("gaming", ((StringValueNode)array.Elements[1]).Value);
             Assert.AreEqual("coding", ((StringValueNode)array.Elements[2]).Value);
-        }
-
-        [TestMethod, Ignore]
-        public void Parse_NestedArrays_WithDifferentDelimiters_ParsesCorrectly()
-        {
-            var source = "pairs[2]:\n  - [2]: 1,2\n  - [2]: 3,4";
-            var result = Toon.Parse(source);
-
-            var property = result.Document!.Properties[0];
-            Assert.AreEqual("pairs", property.Key);
-            Assert.IsInstanceOfType<ArrayNode>(property.Value);
-
-            var outerArray = (ArrayNode)property.Value;
-            Assert.AreEqual(2, outerArray.DeclaredSize);
-            Assert.HasCount(2, outerArray.Elements);
-
-            // Verify first inner array
-            var innerArray1 = (ArrayNode)outerArray.Elements[0];
-            Assert.AreEqual(2, innerArray1.DeclaredSize);
-            Assert.HasCount(2, innerArray1.Elements);
-            Assert.AreEqual("1", ((StringValueNode)innerArray1.Elements[0]).Value);
-            Assert.AreEqual("2", ((StringValueNode)innerArray1.Elements[1]).Value);
-
-            // Verify second inner array
-            var innerArray2 = (ArrayNode)outerArray.Elements[1];
-            Assert.AreEqual(2, innerArray2.DeclaredSize);
-            Assert.HasCount(2, innerArray2.Elements);
-            Assert.AreEqual("3", ((StringValueNode)innerArray2.Elements[0]).Value);
-            Assert.AreEqual("4", ((StringValueNode)innerArray2.Elements[1]).Value);
-        }
-
-        [TestMethod, Ignore]
-        public void Parse_NestedArraysWithTabDelimiter_ParsesCorrectly()
-        {
-            var source = "pairs[2]:\n  - [2\t]: 1\t2\n  - [2\t]: 3\t4";
-            var result = Toon.Parse(source);
-
-            var property = result.Document!.Properties[0];
-            var outerArray = (ArrayNode)property.Value;
-            Assert.AreEqual(2, outerArray.DeclaredSize);
-            Assert.HasCount(2, outerArray.Elements);
-
-            // Verify first inner array uses tab delimiter
-            var innerArray1 = (ArrayNode)outerArray.Elements[0];
-            Assert.HasCount(2, innerArray1.Elements);
-            Assert.AreEqual("1", ((StringValueNode)innerArray1.Elements[0]).Value);
-            Assert.AreEqual("2", ((StringValueNode)innerArray1.Elements[1]).Value);
         }
 
         [TestMethod]

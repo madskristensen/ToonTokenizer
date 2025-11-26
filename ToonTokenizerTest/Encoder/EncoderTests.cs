@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Encoder
 {
     [TestClass]
     public class EncoderTests

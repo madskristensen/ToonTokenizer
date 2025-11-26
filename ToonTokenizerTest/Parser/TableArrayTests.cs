@@ -1,7 +1,7 @@
 using ToonTokenizer;
 using ToonTokenizer.Ast;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Parser
 {
     [TestClass]
     public class TableArrayTests

@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Integration
 {
     [TestClass]
     public class HangTest

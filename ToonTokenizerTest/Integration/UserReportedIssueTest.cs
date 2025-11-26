@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Integration
 {
     /// <summary>
     /// Test for the user-reported issue where TryParse throws ParseException

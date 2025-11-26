@@ -1,7 +1,7 @@
 using ToonTokenizer;
 using ToonTokenizer.Ast;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Parser
 {
     [TestClass]
     public class StructuralTests
@@ -24,7 +24,7 @@ namespace ToonTokenizerTest
             Assert.AreEqual("name", obj.Properties[0].Key);
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void Parse_ObjectWithMultipleProperties_ParsesCorrectly()
         {
             // All property lines have a colon and are indented with 2 spaces

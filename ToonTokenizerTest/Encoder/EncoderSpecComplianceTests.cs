@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Encoder
 {
     /// <summary>
     /// Tests for TOON encoder compliance with v3.0 specification.

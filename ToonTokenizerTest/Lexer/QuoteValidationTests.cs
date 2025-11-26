@@ -1,6 +1,6 @@
 using ToonTokenizer;
 
-namespace ToonTokenizerTest
+namespace ToonTokenizerTest.Lexer
 {
     /// <summary>
     /// Tests for quote validation per TOON spec §7.1 and §7.2.
