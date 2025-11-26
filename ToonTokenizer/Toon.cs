@@ -30,39 +30,27 @@ namespace ToonTokenizer
             {
                 ToonLexer lexer = new(source);
                 var tokens = lexer.Tokenize();
-                // Debug helper: when parsing specific failing cases, emit tokens to stderr
-                try
-                {
-                    if (source != null && source.Contains("items[3]{value}"))
-                    {
-                        foreach (var t in tokens)
-                        {
-                            System.Console.Error.WriteLine($"TOK: {t.Type} '{t.Value}' (line {t.Line}, col {t.Column})");
-                        }
-                    }
-                }
-                catch { }
 
                 ToonParser parser = new(tokens);
                 var document = parser.Parse();
-                
+
                 // Combine lexer and parser errors
                 var allErrors = new List<ToonError>(lexer.Errors);
                 allErrors.AddRange(parser.Errors);
-                
+
                 // If there are errors, return partial result
                 if (allErrors.Count > 0)
                 {
                     return ToonParseResult.Partial(document, allErrors, tokens);
                 }
-                
+
                 // If document is empty (no properties), return failure
                 // This handles empty strings, whitespace-only, and comments-only documents
                 if (document.Properties.Count == 0)
                 {
                     return ToonParseResult.Failure(new ToonError("Source text cannot be null or empty", 0, 0, 0, 0), tokens);
                 }
-                
+
                 return ToonParseResult.Success(document, tokens);
             }
             catch (ParseException)

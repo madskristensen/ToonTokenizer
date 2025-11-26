@@ -1261,8 +1261,15 @@ namespace ToonTokenizer
                 return CreateValueNodeFromSingleToken(tokens[0]);
             }
 
-            // Multi-token: join as string (space-separated)
-            var joined = string.Join(" ", tokens.Select(t => t.Value));
+            // Multi-token: join as string (space-separated) without LINQ
+            // Pre-size StringBuilder based on token count
+            var sb = new System.Text.StringBuilder(tokens.Count * 10);
+            for (int i = 0; i < tokens.Count; i++)
+            {
+                if (i > 0) sb.Append(' ');
+                sb.Append(tokens[i].Value);
+            }
+            var joined = sb.ToString();
             var first = tokens[0];
             var last = tokens[tokens.Count - 1];
 

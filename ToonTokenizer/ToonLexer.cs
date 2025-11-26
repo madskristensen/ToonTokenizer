@@ -16,6 +16,7 @@ namespace ToonTokenizer
         private int _lineStartPosition;
         private readonly Stack<int> _indentStack;
         private readonly List<ToonError> _errors;
+        private readonly StringBuilder _stringBuilder;
 
         public ToonLexer(string source)
         {
@@ -27,6 +28,7 @@ namespace ToonTokenizer
             _indentStack = new Stack<int>();
             _indentStack.Push(0);
             _errors = [];
+            _stringBuilder = new StringBuilder();
         }
 
         /// <summary>
@@ -245,7 +247,7 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
-            var sb = new StringBuilder();
+            _stringBuilder.Clear(); // Reuse field-level StringBuilder
 
             _position++; // Skip opening quote
             _column++;
@@ -265,15 +267,15 @@ namespace ToonTokenizer
                     char escaped = _source[_position];
                     switch (escaped)
                     {
-                        case 'n': sb.Append('\n'); break;
-                        case 'r': sb.Append('\r'); break;
-                        case 't': sb.Append('\t'); break;
-                        case '\\': sb.Append('\\'); break;
-                        case '"': sb.Append('"'); break;
+                        case 'n': _stringBuilder.Append('\n'); break;
+                        case 'r': _stringBuilder.Append('\r'); break;
+                        case 't': _stringBuilder.Append('\t'); break;
+                        case '\\': _stringBuilder.Append('\\'); break;
+                        case '"': _stringBuilder.Append('"'); break;
                         case '\'':
                             // Single quotes can be escaped within single-quoted strings
                             if (quote == '\'')
-                                sb.Append('\'');
+                                _stringBuilder.Append('\'');
                             else
                             {
                                 // Invalid escape - record error and include literal characters
@@ -283,8 +285,8 @@ namespace ToonTokenizer
                                     2,
                                     _line,
                                     _column - 1));
-                                sb.Append('\\');
-                                sb.Append(escaped);
+                                _stringBuilder.Append('\\');
+                                _stringBuilder.Append(escaped);
                             }
                             break;
                         default:
@@ -295,14 +297,14 @@ namespace ToonTokenizer
                                 2,
                                 _line,
                                 _column - 1));
-                            sb.Append('\\');
-                            sb.Append(escaped);
+                            _stringBuilder.Append('\\');
+                            _stringBuilder.Append(escaped);
                             break;
                     }
                 }
                 else
                 {
-                    sb.Append(_source[_position]);
+                    _stringBuilder.Append(_source[_position]);
                 }
 
                 _position++;
@@ -326,7 +328,7 @@ namespace ToonTokenizer
                     startColumn));
 
                 // Return what we have so far as an invalid token
-                return new Token(TokenType.Invalid, quote + sb.ToString(), _line, startColumn, start, endPos - start);
+                return new Token(TokenType.Invalid, quote + _stringBuilder.ToString(), _line, startColumn, start, endPos - start);
             }
 
             if (_position < _source.Length)
@@ -335,7 +337,7 @@ namespace ToonTokenizer
                 _column++;
             }
 
-            return new Token(TokenType.String, sb.ToString(), _line, startColumn, start, _position - start);
+            return new Token(TokenType.String, _stringBuilder.ToString(), _line, startColumn, start, _position - start);
         }
 
         private Token ConsumeNumber()
