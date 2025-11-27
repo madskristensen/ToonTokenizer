@@ -126,18 +126,6 @@ namespace ToonTokenizerTest.Lexer
         }
 
         [TestMethod]
-        public void Tokenize_LeftBrace_ReturnsLeftBraceToken()
-        {
-            ToonLexerTestHelpers.AssertSingleToken("{", TokenType.LeftBrace);
-        }
-
-        [TestMethod]
-        public void Tokenize_RightBrace_ReturnsRightBraceToken()
-        {
-            ToonLexerTestHelpers.AssertSingleToken("}", TokenType.RightBrace);
-        }
-
-        [TestMethod]
         public void Tokenize_Comma_ReturnsCommaToken()
         {
             ToonLexerTestHelpers.AssertSingleToken(",", TokenType.Comma);

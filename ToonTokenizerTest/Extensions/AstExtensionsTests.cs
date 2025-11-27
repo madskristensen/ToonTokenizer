@@ -181,36 +181,6 @@ namespace ToonTokenizerTest.Extensions
         #region GetDepth Tests
 
         [TestMethod]
-        public void GetDepth_IndentZero_ReturnsZero()
-        {
-            var prop = new PropertyNode { IndentLevel = 0 };
-
-            int depth = prop.GetDepth();
-
-            Assert.AreEqual(0, depth);
-        }
-
-        [TestMethod]
-        public void GetDepth_IndentTwo_ReturnsOne()
-        {
-            var prop = new PropertyNode { IndentLevel = 2 };
-
-            int depth = prop.GetDepth();
-
-            Assert.AreEqual(1, depth);
-        }
-
-        [TestMethod]
-        public void GetDepth_IndentFour_ReturnsTwo()
-        {
-            var prop = new PropertyNode { IndentLevel = 4 };
-
-            int depth = prop.GetDepth();
-
-            Assert.AreEqual(2, depth);
-        }
-
-        [TestMethod]
         public void GetDepth_VariousIndents_CalculatesCorrectly()
         {
             Assert.AreEqual(0, new PropertyNode { IndentLevel = 0 }.GetDepth());

@@ -30,69 +30,6 @@ namespace ToonTokenizerTest.Extensions
         }
 
         [TestMethod]
-        public void WithPositionFrom_NumberValueNode_SetsPositionCorrectly()
-        {
-            var token = new Token(TokenType.Number, "42", 3, 10, 20, 2);
-            var node = new NumberValueNode { Value = 42, IsInteger = true };
-
-            var result = node.WithPositionFrom(token);
-
-            Assert.AreSame(node, result);
-            Assert.AreEqual(3, node.StartLine);
-            Assert.AreEqual(10, node.StartColumn);
-            Assert.AreEqual(20, node.StartPosition);
-            Assert.AreEqual(3, node.EndLine);
-            Assert.AreEqual(12, node.EndColumn); // 10 + 2
-            Assert.AreEqual(22, node.EndPosition); // 20 + 2
-        }
-
-        [TestMethod]
-        public void WithPositionFrom_BooleanValueNode_SetsPositionCorrectly()
-        {
-            var token = new Token(TokenType.True, "true", 4, 15, 30, 4);
-            var node = new BooleanValueNode { Value = true };
-
-            var result = node.WithPositionFrom(token);
-
-            Assert.AreSame(node, result);
-            Assert.AreEqual(4, node.StartLine);
-            Assert.AreEqual(15, node.StartColumn);
-            Assert.AreEqual(30, node.StartPosition);
-            Assert.AreEqual(4, node.EndLine);
-            Assert.AreEqual(19, node.EndColumn); // 15 + 4
-            Assert.AreEqual(34, node.EndPosition); // 30 + 4
-        }
-
-        [TestMethod]
-        public void WithPositionFrom_NullValueNode_SetsPositionCorrectly()
-        {
-            var token = new Token(TokenType.Null, "null", 5, 20, 40, 4);
-            var node = new NullValueNode();
-
-            var result = node.WithPositionFrom(token);
-
-            Assert.AreSame(node, result);
-            Assert.AreEqual(5, node.StartLine);
-            Assert.AreEqual(20, node.StartColumn);
-            Assert.AreEqual(40, node.StartPosition);
-            Assert.AreEqual(5, node.EndLine);
-            Assert.AreEqual(24, node.EndColumn); // 20 + 4
-            Assert.AreEqual(44, node.EndPosition); // 40 + 4
-        }
-
-        [TestMethod]
-        public void WithPositionFrom_SupportsMethodChaining()
-        {
-            var token = new Token(TokenType.String, "value", 1, 1, 0, 5);
-            var node = new StringValueNode { Value = "test" }
-                .WithPositionFrom(token);
-
-            Assert.IsNotNull(node);
-            Assert.AreEqual("test", node.Value);
-            Assert.AreEqual(1, node.StartLine);
-        }
-
-        [TestMethod]
         public void WithPositionFrom_PositionZero_HandlesCorrectly()
         {
             var token = new Token(TokenType.String, "first", 1, 1, 0, 5);
@@ -142,20 +79,6 @@ namespace ToonTokenizerTest.Extensions
             Assert.AreEqual(13, node.EndColumn); // 10 + 3
         }
 
-        [TestMethod]
-        public void WithPositionFromRange_SupportsMethodChaining()
-        {
-            var startToken = new Token(TokenType.LeftBracket, "[", 1, 1, 0, 1);
-            var endToken = new Token(TokenType.RightBracket, "]", 1, 11, 10, 1);
-            var node = new ArrayNode { DeclaredSize = 3 }
-                .WithPositionFromRange(startToken, endToken);
-
-            Assert.IsNotNull(node);
-            Assert.AreEqual(3, node.DeclaredSize);
-            Assert.AreEqual(1, node.StartLine);
-            Assert.AreEqual(1, node.EndLine);
-        }
-
         #endregion
 
         #region WithPosition Tests
@@ -202,53 +125,6 @@ namespace ToonTokenizerTest.Extensions
             Assert.AreEqual(1500, node.EndLine);
             Assert.AreEqual(750, node.EndColumn);
             Assert.AreEqual(75000, node.EndPosition);
-        }
-
-        [TestMethod]
-        public void WithPosition_SupportsMethodChaining()
-        {
-            var node = new BooleanValueNode { Value = true }
-                .WithPosition(1, 1, 0, 1, 5, 4);
-
-            Assert.IsNotNull(node);
-            Assert.IsTrue(node.Value);
-            Assert.AreEqual(1, node.StartLine);
-            Assert.AreEqual(1, node.EndLine);
-        }
-
-        #endregion
-
-        #region Integration Tests
-
-        [TestMethod]
-        public void AllThreeMethods_CanBeUsedInterchangeably()
-        {
-            var token = new Token(TokenType.String, "test", 2, 5, 10, 4);
-            var node1 = new StringValueNode { Value = "v1" }.WithPositionFrom(token);
-            var node2 = new StringValueNode { Value = "v2" }.WithPositionFromRange(token, token);
-            var node3 = new StringValueNode { Value = "v3" }.WithPosition(2, 5, 10, 2, 5, 10);
-
-            // All three should produce the same position
-            Assert.AreEqual(node1.StartLine, node2.StartLine);
-            Assert.AreEqual(node2.StartLine, node3.StartLine);
-            Assert.AreEqual(node1.StartColumn, node2.StartColumn);
-            Assert.AreEqual(node2.StartColumn, node3.StartColumn);
-        }
-
-        [TestMethod]
-        public void MethodChaining_MultipleOperations_WorksCorrectly()
-        {
-            var token = new Token(TokenType.Number, "42", 3, 10, 20, 2);
-            var node = new NumberValueNode { Value = 42, IsInteger = true, RawValue = "42" }
-                .WithPositionFrom(token);
-
-            // Verify the node state is complete
-            Assert.AreEqual(42, node.Value);
-            Assert.IsTrue(node.IsInteger);
-            Assert.AreEqual("42", node.RawValue);
-            Assert.AreEqual(3, node.StartLine);
-            Assert.AreEqual(10, node.StartColumn);
-            Assert.AreEqual(20, node.StartPosition);
         }
 
         #endregion

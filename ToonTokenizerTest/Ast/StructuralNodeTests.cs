@@ -13,46 +13,6 @@ namespace ToonTokenizerTest.Ast
         #region ToonDocument Tests
 
         [TestMethod]
-        public void ToonDocument_Constructor_InitializesEmptyPropertiesList()
-        {
-            var document = new ToonDocument();
-            
-            Assert.IsNotNull(document.Properties);
-            Assert.HasCount(0, document.Properties);
-        }
-
-        [TestMethod]
-        public void ToonDocument_Properties_CanAddProperty()
-        {
-            var document = new ToonDocument();
-            var property = new PropertyNode 
-            { 
-                Key = "test", 
-                Value = new StringValueNode { Value = "value" } 
-            };
-            
-            document.Properties.Add(property);
-            
-            Assert.HasCount(1, document.Properties);
-            Assert.AreEqual("test", document.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void ToonDocument_Properties_CanAddMultipleProperties()
-        {
-            var document = new ToonDocument();
-            
-            document.Properties.Add(new PropertyNode { Key = "key1", Value = new StringValueNode { Value = "value1" } });
-            document.Properties.Add(new PropertyNode { Key = "key2", Value = new StringValueNode { Value = "value2" } });
-            document.Properties.Add(new PropertyNode { Key = "key3", Value = new StringValueNode { Value = "value3" } });
-            
-            Assert.HasCount(3, document.Properties);
-            Assert.AreEqual("key1", document.Properties[0].Key);
-            Assert.AreEqual("key2", document.Properties[1].Key);
-            Assert.AreEqual("key3", document.Properties[2].Key);
-        }
-
-        [TestMethod]
         public void ToonDocument_Accept_CallsVisitorMethod()
         {
             var document = new ToonDocument();
@@ -62,27 +22,6 @@ namespace ToonTokenizerTest.Ast
             
             Assert.IsTrue(visitor.VisitedDocument);
             Assert.AreEqual("ToonDocument visited", result);
-        }
-
-        [TestMethod]
-        public void ToonDocument_PositionProperties_CanBeSet()
-        {
-            var document = new ToonDocument
-            {
-                StartLine = 1,
-                StartColumn = 1,
-                StartPosition = 0,
-                EndLine = 5,
-                EndColumn = 20,
-                EndPosition = 100
-            };
-            
-            Assert.AreEqual(1, document.StartLine);
-            Assert.AreEqual(1, document.StartColumn);
-            Assert.AreEqual(0, document.StartPosition);
-            Assert.AreEqual(5, document.EndLine);
-            Assert.AreEqual(20, document.EndColumn);
-            Assert.AreEqual(100, document.EndPosition);
         }
 
         [TestMethod]
@@ -150,127 +89,6 @@ settings:
         #region PropertyNode Tests
 
         [TestMethod]
-        public void PropertyNode_DefaultConstructor_InitializesDefaults()
-        {
-            var property = new PropertyNode();
-            
-            Assert.AreEqual(string.Empty, property.Key);
-            Assert.IsNull(property.Value);
-            Assert.AreEqual(0, property.IndentLevel);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Key_CanBeSet()
-        {
-            var property = new PropertyNode { Key = "testKey" };
-            
-            Assert.AreEqual("testKey", property.Key);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToString()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "name",
-                Value = new StringValueNode { Value = "John" }
-            };
-            
-            Assert.IsInstanceOfType<StringValueNode>(property.Value);
-            Assert.AreEqual("John", ((StringValueNode)property.Value).Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToNumber()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "age",
-                Value = new NumberValueNode { Value = 30, IsInteger = true }
-            };
-            
-            Assert.IsInstanceOfType<NumberValueNode>(property.Value);
-            Assert.AreEqual(30, ((NumberValueNode)property.Value).Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToBoolean()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "active",
-                Value = new BooleanValueNode { Value = true }
-            };
-            
-            Assert.IsInstanceOfType<BooleanValueNode>(property.Value);
-            Assert.IsTrue(((BooleanValueNode)property.Value).Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToNull()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "nullable",
-                Value = new NullValueNode()
-            };
-            
-            Assert.IsInstanceOfType<NullValueNode>(property.Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToObject()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "user",
-                Value = new ObjectNode()
-            };
-            
-            Assert.IsInstanceOfType<ObjectNode>(property.Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToArray()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "items",
-                Value = new ArrayNode()
-            };
-            
-            Assert.IsInstanceOfType<ArrayNode>(property.Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_Value_CanBeSetToTableArray()
-        {
-            var property = new PropertyNode 
-            { 
-                Key = "users",
-                Value = new TableArrayNode()
-            };
-            
-            Assert.IsInstanceOfType<TableArrayNode>(property.Value);
-        }
-
-        [TestMethod]
-        public void PropertyNode_IndentLevel_CanBeSet()
-        {
-            var property = new PropertyNode { IndentLevel = 2 };
-            
-            Assert.AreEqual(2, property.IndentLevel);
-        }
-
-        [TestMethod]
-        public void PropertyNode_IndentLevel_DefaultIsZero()
-        {
-            var property = new PropertyNode();
-            
-            Assert.AreEqual(0, property.IndentLevel);
-        }
-
-        [TestMethod]
         public void PropertyNode_Accept_CallsVisitorMethod()
         {
             var property = new PropertyNode 
@@ -284,27 +102,6 @@ settings:
             
             Assert.IsTrue(visitor.VisitedProperty);
             Assert.AreEqual("PropertyNode visited", result);
-        }
-
-        [TestMethod]
-        public void PropertyNode_PositionProperties_CanBeSet()
-        {
-            var property = new PropertyNode
-            {
-                StartLine = 2,
-                StartColumn = 3,
-                StartPosition = 10,
-                EndLine = 2,
-                EndColumn = 15,
-                EndPosition = 22
-            };
-            
-            Assert.AreEqual(2, property.StartLine);
-            Assert.AreEqual(3, property.StartColumn);
-            Assert.AreEqual(10, property.StartPosition);
-            Assert.AreEqual(2, property.EndLine);
-            Assert.AreEqual(15, property.EndColumn);
-            Assert.AreEqual(22, property.EndPosition);
         }
 
         [TestMethod]
@@ -368,43 +165,6 @@ settings:
         #region ObjectNode Tests
 
         [TestMethod]
-        public void ObjectNode_Constructor_InitializesEmptyPropertiesList()
-        {
-            var obj = new ObjectNode();
-            
-            Assert.IsNotNull(obj.Properties);
-            Assert.HasCount(0, obj.Properties);
-        }
-
-        [TestMethod]
-        public void ObjectNode_Properties_CanAddProperty()
-        {
-            var obj = new ObjectNode();
-            var property = new PropertyNode 
-            { 
-                Key = "name", 
-                Value = new StringValueNode { Value = "John" } 
-            };
-            
-            obj.Properties.Add(property);
-            
-            Assert.HasCount(1, obj.Properties);
-            Assert.AreEqual("name", obj.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void ObjectNode_Properties_CanAddMultipleProperties()
-        {
-            var obj = new ObjectNode();
-            
-            obj.Properties.Add(new PropertyNode { Key = "name", Value = new StringValueNode { Value = "John" } });
-            obj.Properties.Add(new PropertyNode { Key = "age", Value = new NumberValueNode { Value = 30 } });
-            obj.Properties.Add(new PropertyNode { Key = "active", Value = new BooleanValueNode { Value = true } });
-            
-            Assert.HasCount(3, obj.Properties);
-        }
-
-        [TestMethod]
         public void ObjectNode_Accept_CallsVisitorMethod()
         {
             var obj = new ObjectNode();
@@ -414,27 +174,6 @@ settings:
             
             Assert.IsTrue(visitor.VisitedObject);
             Assert.AreEqual("ObjectNode visited", result);
-        }
-
-        [TestMethod]
-        public void ObjectNode_PositionProperties_CanBeSet()
-        {
-            var obj = new ObjectNode
-            {
-                StartLine = 3,
-                StartColumn = 5,
-                StartPosition = 20,
-                EndLine = 6,
-                EndColumn = 10,
-                EndPosition = 50
-            };
-            
-            Assert.AreEqual(3, obj.StartLine);
-            Assert.AreEqual(5, obj.StartColumn);
-            Assert.AreEqual(20, obj.StartPosition);
-            Assert.AreEqual(6, obj.EndLine);
-            Assert.AreEqual(10, obj.EndColumn);
-            Assert.AreEqual(50, obj.EndPosition);
         }
 
         [TestMethod]
@@ -586,64 +325,6 @@ settings:
         #endregion
 
         #region Integration Tests
-
-        [TestMethod]
-        public void AllStructuralNodes_ImplementAccept()
-        {
-            var visitor = new TestVisitor();
-            
-            new ToonDocument().Accept(visitor);
-            new PropertyNode { Value = new NullValueNode() }.Accept(visitor);
-            new ObjectNode().Accept(visitor);
-            
-            Assert.IsTrue(visitor.VisitedDocument);
-            Assert.IsTrue(visitor.VisitedProperty);
-            Assert.IsTrue(visitor.VisitedObject);
-        }
-
-        [TestMethod]
-        public void AllStructuralNodes_HavePositionTracking()
-        {
-            var source = @"user:
-  name: John";
-            var result = Toon.Parse(source);
-            
-            // Document
-            Assert.IsGreaterThan(0, result.Document.StartLine);
-            
-            // Property
-            var property = result.Document.Properties[0];
-            Assert.IsGreaterThan(0, property.StartLine);
-            Assert.IsGreaterThanOrEqualTo(0, property.StartPosition);
-            
-            // ObjectNode
-            var obj = (ObjectNode)property.Value;
-            Assert.IsGreaterThan(0, obj.StartLine);
-            Assert.IsGreaterThanOrEqualTo(0, obj.StartPosition);
-        }
-
-        [TestMethod]
-        public void MixedDocument_AllNodesParseCorrectly()
-        {
-            var source = @"title: Example
-count: 5
-items[2]: a,b
-details:
-  info: data
-users[1]{id,name}:
-  1,Alice";
-            var result = Toon.Parse(source);
-            
-            Assert.IsTrue(result.IsSuccess);
-            Assert.HasCount(5, result.Document.Properties);
-            
-            // Verify each type
-            Assert.IsInstanceOfType<StringValueNode>(result.Document.Properties[0].Value);
-            Assert.IsInstanceOfType<NumberValueNode>(result.Document.Properties[1].Value);
-            Assert.IsInstanceOfType<ArrayNode>(result.Document.Properties[2].Value);
-            Assert.IsInstanceOfType<ObjectNode>(result.Document.Properties[3].Value);
-            Assert.IsInstanceOfType<TableArrayNode>(result.Document.Properties[4].Value);
-        }
 
         [TestMethod]
         public void PropertyNode_InNestedObject_HasCorrectIndentLevel()

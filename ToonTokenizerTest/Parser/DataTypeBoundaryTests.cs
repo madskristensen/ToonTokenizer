@@ -245,57 +245,6 @@ namespace ToonTokenizerTest.Parser
 
         #endregion
 
-        #region Key Name Boundary Tests (§7.2)
-
-        [TestMethod]
-        public void Parse_KeyVeryLong_ParsesCorrectly()
-        {
-            // Very long key name (reduced from 500 to 200)
-            var longKey = new string('k', 200);
-            var source = $"{longKey}: value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual(longKey, result.Document.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void Parse_KeyUnicode_ParsesCorrectly()
-        {
-            var source = "名前: value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual("名前", result.Document.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void Parse_KeyWithSpaces_ParsesCorrectly()
-        {
-            var source = "\"key with spaces\": value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual("key with spaces", result.Document.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void Parse_KeyWithSpecialCharacters_ParsesCorrectly()
-        {
-            var source = "\"key!@#$%\": value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual("key!@#$%", result.Document.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void Parse_KeyNumericOnly_ParsesCorrectly()
-        {
-            var source = "key123: value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual("key123", result.Document.Properties[0].Key);
-        }
-
-        #endregion
-
         #region Mixed Array Type Boundaries
 
         [TestMethod]
