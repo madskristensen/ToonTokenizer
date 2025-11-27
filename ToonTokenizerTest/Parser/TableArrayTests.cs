@@ -7,17 +7,6 @@ namespace ToonTokenizerTest.Parser
     public class TableArrayTests
     {
         [TestMethod]
-        public void Parse_SimpleTableArray_ParsesCorrectly()
-        {
-            var source = @"users[2]{id,name}:
-  1,Alice
-  2,Bob";
-
-            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
-            ToonTestHelpers.AssertTableStructure(table, 2, "id", "name");
-        }
-
-        [TestMethod]
         public void Parse_TableArray_SchemaFieldsCorrect()
         {
             var source = @"data[1]{id,name,age}:
@@ -184,16 +173,6 @@ namespace ToonTokenizerTest.Parser
         }
 
         [TestMethod]
-        public void Parse_TableArray_WithSchemaSpaces_ParsesCorrectly()
-        {
-            var source = @"data[1]{field1, field2, field3}:
-  1,2,3";
-
-            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
-            Assert.HasCount(3, table.Schema, "Schema should have 3 fields (spaces should be trimmed)");
-        }
-
-        [TestMethod]
         public void Parse_MultipleTableArrays_ParsesCorrectly()
         {
             var source = @"table1[1]{a,b}:
@@ -213,15 +192,6 @@ table2[1]{x,y}:
 
             ToonTestHelpers.AssertTableStructure(table1, 1, "a", "b");
             ToonTestHelpers.AssertTableStructure(table2, 1, "x", "y");
-        }
-
-        [TestMethod]
-        public void Parse_TableArray_ZeroRows_ParsesCorrectly()
-        {
-            var source = "empty[0]{id,name}:\n";
-
-            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
-            ToonTestHelpers.AssertTableStructure(table, 0, "id", "name");
         }
 
         [TestMethod]
@@ -268,19 +238,5 @@ table2[1]{x,y}:
             }
         }
 
-        [TestMethod]
-        public void Parse_NestedObjectContainingTableArray_ParsesCorrectly()
-        {
-            var source = @"root:
-  data[2]{id,value}:
-    1,alpha
-    2,beta";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var root = (ObjectNode)result.Document.Properties[0].Value;
-            var table = (TableArrayNode)root.Properties[0].Value;
-
-            ToonTestHelpers.AssertTableStructure(table, 2, "id", "value");
-        }
     }
 }

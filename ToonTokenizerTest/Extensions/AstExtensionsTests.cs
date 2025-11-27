@@ -278,7 +278,7 @@ namespace ToonTokenizerTest.Extensions
             string debug = array.ToDebugString();
 
             Assert.IsNotNull(debug);
-            Assert.IsTrue(debug.Contains("item1") || debug.Contains("2") || debug.Contains("Array"));
+            Assert.IsTrue(debug.Contains("item1") || debug.Contains('2') || debug.Contains("Array"));
         }
 
         [TestMethod]

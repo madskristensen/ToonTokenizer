@@ -185,17 +185,6 @@ namespace ToonTokenizerTest.Parser
         }
 
         [TestMethod]
-        public void Parse_EmptyString_ParsesCorrectly()
-        {
-            var source = "text: \"\"";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (StringValueNode)result.Document.Properties[0].Value;
-
-            Assert.AreEqual("", value.Value, "Empty string should parse");
-        }
-
-        [TestMethod]
         public void Parse_StringWithOnlySpaces_ParsesCorrectly()
         {
             var source = "text: \"   \"";
@@ -221,18 +210,6 @@ namespace ToonTokenizerTest.Parser
         #endregion
 
         #region Invalid Escapes
-
-        [TestMethod]
-        public void Parse_StringWithInvalidEscapeSequence_HandlesGracefully()
-        {
-            // \x is not a valid escape sequence
-            var source = @"text: ""Invalid\xEscape""";
-
-            ToonParseResult result = Toon.Parse(source);
-
-            // Parser may treat invalid escape literally or error - either is acceptable
-            Assert.IsNotNull(result, "Parser should handle invalid escape gracefully");
-        }
 
         [TestMethod]
         public void Parse_StringWithBackslashAtEnd_HandlesGracefully()

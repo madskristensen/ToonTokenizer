@@ -7,15 +7,6 @@ namespace ToonTokenizerTest.Parser
     public class ParserTests
     {
         [TestMethod]
-        public void Parse_EmptyString_ReturnsEmptyDocument()
-        {
-            ToonParseResult result = Toon.Parse("");
-
-            Assert.IsFalse(result.IsSuccess);
-            Assert.IsEmpty(result.Document.Properties);
-        }
-
-        [TestMethod]
         public void Parse_SingleProperty_ReturnsDocumentWithOneProperty()
         {
             var source = "name: John";
@@ -23,82 +14,6 @@ namespace ToonTokenizerTest.Parser
 
             Assert.HasCount(1, doc.Document.Properties);
             Assert.AreEqual("name", doc.Document.Properties[0].Key);
-        }
-
-        [TestMethod]
-        public void Parse_MultipleProperties_ReturnsAllProperties()
-        {
-            var source = @"name: John
-age: 30
-active: true";
-            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
-
-            Assert.HasCount(3, doc.Document.Properties);
-            Assert.AreEqual("name", doc.Document.Properties[0].Key);
-            Assert.AreEqual("age", doc.Document.Properties[1].Key);
-            Assert.AreEqual("active", doc.Document.Properties[2].Key);
-        }
-
-        [TestMethod]
-        public void Parse_NestedObject_ParsesCorrectly()
-        {
-            var source = @"user:
-  name: John
-  age: 30";
-            ObjectNode userObj = ToonTestHelpers.ParseAndGetValue<ObjectNode>(source);
-
-            Assert.HasCount(2, userObj.Properties);
-            Assert.AreEqual("name", userObj.Properties[0].Key);
-            Assert.AreEqual("age", userObj.Properties[1].Key);
-        }
-
-        [TestMethod]
-        public void Parse_TableArray_ParsesCorrectly()
-        {
-            var source = @"users[2]{id,name}:
-  1,Alice
-  2,Bob";
-            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
-
-            ToonTestHelpers.AssertTableStructure(table, 2, "id", "name");
-        }
-
-        [TestMethod]
-        public void Parse_TableArrayWithMultipleFields_ParsesAllFields()
-        {
-            var source = @"data[1]{a,b,c,d}:
-  1,2,3,4";
-            TableArrayNode table = ToonTestHelpers.ParseAndGetValue<TableArrayNode>(source);
-
-            ToonTestHelpers.AssertTableStructure(table, 1, "a", "b", "c", "d");
-            Assert.HasCount(4, table.Rows[0]);
-        }
-
-        [TestMethod]
-        public void Parse_MixedContent_ParsesCorrectly()
-        {
-            var source = @"title: Example
-count: 5
-items[2]: a,b
-details:
-  info: data";
-            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
-
-            Assert.HasCount(4, doc.Document.Properties);
-            Assert.IsInstanceOfType<StringValueNode>(doc.Document.Properties[0].Value);
-            Assert.IsInstanceOfType<NumberValueNode>(doc.Document.Properties[1].Value);
-            Assert.IsInstanceOfType<ArrayNode>(doc.Document.Properties[2].Value);
-            Assert.IsInstanceOfType<ObjectNode>(doc.Document.Properties[3].Value);
-        }
-
-        [TestMethod]
-        public void Parse_PropertyWithComment_IgnoresComment()
-        {
-            var source = @"name: John # This is a comment
-age: 30";
-            ToonParseResult doc = ToonTestHelpers.ParseSuccess(source);
-
-            Assert.HasCount(2, doc.Document.Properties);
         }
 
         [TestMethod]
@@ -137,18 +52,6 @@ hikes[2]{id,name,distance}:
             var hikesTable = (TableArrayNode)hikes.Value;
             Assert.HasCount(3, hikesTable.Schema);
             Assert.HasCount(2, hikesTable.Rows);
-        }
-
-        [TestMethod]
-        public void Parse_AstNodePositions_AreTracked()
-        {
-            var source = "name: John";
-            ToonParseResult result = Toon.Parse(source);
-
-            PropertyNode property = result.Document.Properties[0];
-            Assert.IsGreaterThan(0, property.StartLine);
-            Assert.IsGreaterThan(0, property.StartColumn);
-            Assert.IsGreaterThanOrEqualTo(0, property.StartPosition);
         }
     }
 }

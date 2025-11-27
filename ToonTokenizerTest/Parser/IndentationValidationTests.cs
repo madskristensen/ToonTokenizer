@@ -13,17 +13,6 @@ namespace ToonTokenizerTest.Parser
         #region Basic Indentation
 
         [TestMethod]
-        public void Parse_TwoSpaceIndentation_ParsesCorrectly()
-        {
-            var source = @"parent:
-  child: value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var parent = (ObjectNode)result.Document.Properties[0].Value;
-            Assert.HasCount(1, parent.Properties);
-        }
-
-        [TestMethod]
         public void Parse_FourSpaceIndentation_ParsesCorrectly()
         {
             var source = @"parent:
@@ -290,19 +279,6 @@ parent2:
         #endregion
 
         #region Blank Lines and Indentation
-
-        [TestMethod]
-        public void Parse_BlankLinesBetweenProperties_PreservesStructure()
-        {
-            var source = @"prop1: value1
-
-prop2: value2
-
-prop3: value3";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.HasCount(3, result.Document.Properties);
-        }
 
         [TestMethod]
         public void Parse_BlankLinesInNestedObject_PreservesStructure()

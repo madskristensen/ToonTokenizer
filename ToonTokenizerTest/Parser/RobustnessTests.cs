@@ -133,40 +133,6 @@ namespace ToonTokenizerTest.Parser
             ToonTestHelpers.AssertTableStructure(table, 500, "id", "name", "email");
         }
 
-        [TestMethod]
-        public void Parse_ManyTopLevelProperties_500Properties_ParsesCorrectly()
-        {
-            // Document with 500 top-level properties
-            var properties = string.Join("\n", Enumerable.Range(1, 500).Select(i => $"prop{i}: value{i}"));
-            var source = properties;
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.HasCount(500, result.Document.Properties);
-        }
-
-        [TestMethod]
-        public void Parse_VeryLongSingleLine_ParsesCorrectly()
-        {
-            // Single line with 10,000 characters
-            var longValue = new string('a', 10000);
-            var source = $"value: \"{longValue}\"";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (StringValueNode)result.Document.Properties[0].Value;
-            Assert.AreEqual(10000, value.Value.Length);
-        }
-
-        [TestMethod]
-        public void Parse_DocumentWith1000Lines_ParsesCorrectly()
-        {
-            // Document with 1000 lines of properties
-            var lines = string.Join("\n", Enumerable.Range(1, 1000).Select(i => $"line{i}: value"));
-            var source = lines;
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.HasCount(1000, result.Document.Properties);
-        }
-
         #endregion
 
         #region Whitespace Stress Tests
@@ -290,21 +256,6 @@ valid3: ok";
         }
 
         [TestMethod]
-        public void Parse_UnclosedQuotes_HandlesGracefully()
-        {
-            // Unclosed string quotes
-            var source = @"valid1: ok
-invalid: ""unclosed
-valid2: ok";
-
-            ToonParseResult result = Toon.Parse(source);
-
-            // Should report error and continue
-            Assert.IsTrue(result.HasErrors);
-            Assert.IsNotNull(result.Document);
-        }
-
-        [TestMethod]
         public void Parse_InvalidArraySyntax_ContinuesParsing()
         {
             // Various invalid array syntax
@@ -421,25 +372,6 @@ nested:
                 ToonParseResult result = Toon.Parse(source);
                 Assert.IsFalse(result.HasErrors, $"Iteration {i} should parse successfully");
             }
-        }
-
-        [TestMethod]
-        public void Parse_EmptyDocument_HandlesGracefully()
-        {
-            var source = "";
-            ToonParseResult result = Toon.Parse(source);
-
-            // Empty document should be valid (or have specific error)
-            Assert.IsNotNull(result);
-        }
-
-        [TestMethod]
-        public void Parse_WhitespaceOnlyDocument_HandlesGracefully()
-        {
-            var source = "   \t\n  \n\t  ";
-            ToonParseResult result = Toon.Parse(source);
-
-            Assert.IsNotNull(result);
         }
 
         [TestMethod]

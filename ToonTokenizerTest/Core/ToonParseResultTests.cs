@@ -42,7 +42,7 @@ namespace ToonTokenizerTest.Core
         [TestMethod]
         public void Constructor_WithNullDocument_CreatesEmptyDocument()
         {
-            var result = new ToonParseResult(null, new List<ToonError>());
+            var result = new ToonParseResult(null!, []);
 
             Assert.IsNotNull(result.Document);
             Assert.IsEmpty(result.Document.Properties);
@@ -52,7 +52,7 @@ namespace ToonTokenizerTest.Core
         public void Constructor_WithNullErrors_CreatesEmptyList()
         {
             var doc = new ToonDocument();
-            var result = new ToonParseResult(doc, null);
+            var result = new ToonParseResult(doc, null!);
 
             Assert.IsNotNull(result.Errors);
             Assert.IsEmpty(result.Errors);
@@ -97,7 +97,7 @@ namespace ToonTokenizerTest.Core
         [TestMethod]
         public void Success_WithNullDocument_CreatesEmptyDocument()
         {
-            var result = ToonParseResult.Success(null);
+            var result = ToonParseResult.Success(null!);
 
             Assert.IsNotNull(result.Document);
             Assert.IsEmpty(result.Document.Properties);
@@ -156,7 +156,7 @@ namespace ToonTokenizerTest.Core
         public void Partial_WithNullDocument_CreatesEmptyDocument()
         {
             var errors = new List<ToonError> { new("test", 0, 1, 1, 1) };
-            var result = ToonParseResult.Partial(null, errors);
+            var result = ToonParseResult.Partial(null!, errors);
 
             Assert.IsNotNull(result.Document);
             Assert.IsEmpty(result.Document.Properties);

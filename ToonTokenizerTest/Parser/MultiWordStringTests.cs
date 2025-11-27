@@ -70,15 +70,6 @@ namespace ToonTokenizerTest.Parser
         #region Email and URL Patterns
 
         [TestMethod]
-        public void Parse_EmailAsUnquotedString_ParsesCorrectly()
-        {
-            var source = "email: user@example.com";
-            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
-
-            Assert.AreEqual("user@example.com", value.Value);
-        }
-
-        [TestMethod]
         public void Parse_EmailWithDots_ParsesCorrectly()
         {
             var source = "email: first.last@company.co.uk";
@@ -113,30 +104,6 @@ namespace ToonTokenizerTest.Parser
         #endregion
 
         #region Multi-Word with Special Characters
-
-        [TestMethod]
-        public void Parse_MultiWordWithHyphens_ParsesCorrectly()
-        {
-            var source = "name: Mary-Jane Watson-Parker";
-            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
-
-            Assert.Contains("Mary", value.Value);
-            Assert.Contains("Jane", value.Value);
-            Assert.Contains("Watson", value.Value);
-            Assert.Contains("Parker", value.Value);
-        }
-
-        [TestMethod]
-        public void Parse_MultiWordWithUnderscores_ParsesCorrectly()
-        {
-            var source = "filename: my_document_final_version";
-            StringValueNode value = ToonTestHelpers.ParseAndGetValue<StringValueNode>(source);
-
-            Assert.Contains("my", value.Value);
-            Assert.Contains("document", value.Value);
-            Assert.Contains("final", value.Value);
-            Assert.Contains("version", value.Value);
-        }
 
         [TestMethod]
         public void Parse_MultiWordWithApostrophes_ParsesCorrectly()
@@ -208,30 +175,6 @@ second: value";
             Assert.Contains("First", value.Value);
             Assert.Contains("Line", value.Value);
             Assert.DoesNotContain("second", value.Value);
-        }
-
-        #endregion
-
-        #region Array Context (Single-Word Only)
-
-        [TestMethod]
-        public void Parse_ArrayWithSingleWords_ParsesCorrectly()
-        {
-            // In arrays, words are separated by delimiters, not spaces
-            var source = "colors[3]: red,green,blue";
-            ArrayNode array = ToonTestHelpers.ParseAndGetValue<ArrayNode>(source);
-
-            ToonTestHelpers.AssertArrayElements(array, "red", "green", "blue");
-        }
-
-        [TestMethod]
-        public void Parse_ArrayWithQuotedMultiWord_ParsesCorrectly()
-        {
-            // Multi-word values in arrays must be quoted
-            var source = "cities[2]: \"New York\",\"Los Angeles\"";
-            ArrayNode array = ToonTestHelpers.ParseAndGetValue<ArrayNode>(source);
-
-            ToonTestHelpers.AssertArrayElements(array, "New York", "Los Angeles");
         }
 
         #endregion

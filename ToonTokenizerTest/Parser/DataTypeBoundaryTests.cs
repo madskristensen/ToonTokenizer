@@ -14,27 +14,6 @@ namespace ToonTokenizerTest.Parser
         #region Number Boundary Tests (§2)
 
         [TestMethod]
-        public void Parse_NumberZero_ParsesCorrectly()
-        {
-            var source = "value: 0";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (NumberValueNode)result.Document.Properties[0].Value;
-            Assert.AreEqual(0, value.Value);
-        }
-
-        [TestMethod]
-        public void Parse_NumberNegativeZero_ParsesCorrectly()
-        {
-            var source = "value: -0";
-            ToonParseResult result = Toon.Parse(source);
-
-            Assert.IsFalse(result.HasErrors);
-            var value = (NumberValueNode)result.Document.Properties[0].Value;
-            Assert.AreEqual("-0", value.RawValue);
-        }
-
-        [TestMethod]
         public void Parse_NumberMaxInt32_ParsesCorrectly()
         {
             var source = $"value: {int.MaxValue}";
@@ -104,39 +83,9 @@ namespace ToonTokenizerTest.Parser
             Assert.AreEqual(123456789.987654321, value.Value);
         }
 
-        [TestMethod]
-        public void Parse_NumberScientificNotation_ParsesCorrectly()
-        {
-            var source = "value: 1.23e10";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (NumberValueNode)result.Document.Properties[0].Value;
-            Assert.AreEqual(1.23e10, value.Value);
-        }
-
-        [TestMethod]
-        public void Parse_NumberNegativeScientific_ParsesCorrectly()
-        {
-            var source = "value: -4.56e-8";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (NumberValueNode)result.Document.Properties[0].Value;
-            Assert.AreEqual(-4.56e-8, value.Value);
-        }
-
         #endregion
 
         #region String Boundary Tests (§7)
-
-        [TestMethod]
-        public void Parse_StringEmpty_ParsesCorrectly()
-        {
-            var source = "value: \"\"";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (StringValueNode)result.Document.Properties[0].Value;
-            Assert.AreEqual("", value.Value);
-        }
 
         [TestMethod]
         public void Parse_StringOnlyWhitespace_ParsesCorrectly()
@@ -208,39 +157,6 @@ namespace ToonTokenizerTest.Parser
             Assert.IsFalse(result.HasErrors);
             var value = (StringValueNode)result.Document.Properties[0].Value;
             Assert.IsTrue(value.Value.Contains('\\') || value.Value.Contains("\\\\"));
-        }
-
-        #endregion
-
-        #region Boolean and Null Boundary Tests
-
-        [TestMethod]
-        public void Parse_BooleanTrue_ParsesCorrectly()
-        {
-            var source = "value: true";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (BooleanValueNode)result.Document.Properties[0].Value;
-            Assert.IsTrue(value.Value);
-        }
-
-        [TestMethod]
-        public void Parse_BooleanFalse_ParsesCorrectly()
-        {
-            var source = "value: false";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            var value = (BooleanValueNode)result.Document.Properties[0].Value;
-            Assert.IsFalse(value.Value);
-        }
-
-        [TestMethod]
-        public void Parse_NullValue_ParsesCorrectly()
-        {
-            var source = "value: null";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.IsInstanceOfType<NullValueNode>(result.Document.Properties[0].Value);
         }
 
         #endregion

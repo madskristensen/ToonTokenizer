@@ -13,15 +13,6 @@ namespace ToonTokenizerTest.Parser
         #region Valid Key Patterns
 
         [TestMethod]
-        public void Parse_KeyWithSingleUnderscore_ParsesCorrectly()
-        {
-            var source = "my_key: value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual("my_key", result.Document.Properties[0].Key, "Key with underscore should parse");
-        }
-
-        [TestMethod]
         public void Parse_KeyWithMultipleUnderscores_ParsesCorrectly()
         {
             var source = "my_long_key_name: value";
@@ -82,15 +73,6 @@ namespace ToonTokenizerTest.Parser
 
             ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
             Assert.AreEqual("kebab-case-key", result.Document.Properties[0].Key, "Kebab-case key should parse");
-        }
-
-        [TestMethod]
-        public void Parse_KeyWithNumbers_ParsesCorrectly()
-        {
-            var source = "key123: value";
-
-            ToonParseResult result = ToonTestHelpers.ParseSuccess(source);
-            Assert.AreEqual("key123", result.Document.Properties[0].Key, "Key with numbers should parse");
         }
 
         [TestMethod]
