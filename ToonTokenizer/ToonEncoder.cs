@@ -369,7 +369,7 @@ namespace ToonTokenizer
             }
         }
 
-        private bool IsTabularArray(JsonElement array)
+        private static bool IsTabularArray(JsonElement array)
         {
             if (array.GetArrayLength() == 0)
                 return false;
@@ -439,7 +439,7 @@ namespace ToonTokenizer
             }
         }
 
-        private void EncodeInlineArray(JsonElement array, StringBuilder sb, string activeDelimiter)
+        private static void EncodeInlineArray(JsonElement array, StringBuilder sb, string activeDelimiter)
         {
             // Direct append without intermediate List allocation
             bool first = true;
@@ -451,12 +451,12 @@ namespace ToonTokenizer
             }
         }
 
-        private void EncodeValue(JsonElement element, StringBuilder sb, string delimiter)
+        private static void EncodeValue(JsonElement element, StringBuilder sb, string delimiter)
         {
             sb.Append(FormatValue(element, delimiter));
         }
 
-        private string FormatValue(JsonElement element, string delimiter)
+        private static string FormatValue(JsonElement element, string delimiter)
         {
             switch (element.ValueKind)
             {
@@ -484,7 +484,7 @@ namespace ToonTokenizer
             }
         }
 
-        private string FormatNumber(JsonElement element)
+        private static string FormatNumber(JsonElement element)
         {
             // §2: Canonical number form - no exponent, no trailing zeros, no leading zeros
             if (element.TryGetInt32(out int intValue))
@@ -550,7 +550,7 @@ namespace ToonTokenizer
             }
         }
 
-        private bool AllPrimitives(JsonElement array)
+        private static bool AllPrimitives(JsonElement array)
         {
             foreach (var element in array.EnumerateArray())
             {
@@ -560,7 +560,7 @@ namespace ToonTokenizer
             return true;
         }
 
-        private bool IsPrimitive(JsonElement element)
+        private static bool IsPrimitive(JsonElement element)
         {
             return element.ValueKind == JsonValueKind.String ||
                    element.ValueKind == JsonValueKind.Number ||
@@ -569,7 +569,7 @@ namespace ToonTokenizer
                    element.ValueKind == JsonValueKind.Null;
         }
 
-        private bool NeedsQuoting(string value, string delimiter)
+        private static bool NeedsQuoting(string value, string delimiter)
         {
             // §7.2: String quoting rules
             if (string.IsNullOrEmpty(value))
@@ -609,7 +609,7 @@ namespace ToonTokenizer
             return false;
         }
 
-        private string EscapeString(string value)
+        private static string EscapeString(string value)
         {
             return value
                 .Replace("\\", "\\\\")
@@ -619,7 +619,7 @@ namespace ToonTokenizer
                 .Replace("\t", "\\t");
         }
 
-        private string EscapeKey(string key)
+        private static string EscapeKey(string key)
         {
             // §7.3: Keys MAY be unquoted only if they match: ^[A-Za-z_][A-Za-z0-9_.]*$
             if (!KeyPattern.IsMatch(key))

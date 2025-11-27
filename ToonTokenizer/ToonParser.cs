@@ -1075,7 +1075,7 @@ namespace ToonTokenizer
         /// <summary>
         /// Sets position information on a node from start and end tokens.
         /// </summary>
-        private void SetNodePositions<T>(T node, Token startToken, Token endToken) where T : AstNode
+        private static void SetNodePositions<T>(T node, Token startToken, Token endToken) where T : AstNode
         {
             node.StartLine = startToken.Line;
             node.StartColumn = startToken.Column;
@@ -1315,7 +1315,7 @@ namespace ToonTokenizer
         /// Creates an AST value node from a list of tokens.
         /// Handles single tokens, multiple tokens (joined as string), and empty token lists.
         /// </summary>
-        private AstNode CreateValueNodeFromTokens(List<Token> tokens)
+        private static AstNode CreateValueNodeFromTokens(List<Token> tokens)
         {
             if (tokens.Count == 0)
             {
@@ -1349,7 +1349,7 @@ namespace ToonTokenizer
         /// <summary>
         /// Creates an AST value node from a single token.
         /// </summary>
-        private AstNode CreateValueNodeFromSingleToken(Token token)
+        private static AstNode CreateValueNodeFromSingleToken(Token token)
         {
             return token.Type switch
             {
