@@ -17,9 +17,9 @@ namespace ToonTokenizerTest.Ast
         {
             var document = new ToonDocument();
             var visitor = new TestVisitor();
-            
+
             var result = document.Accept(visitor);
-            
+
             Assert.IsTrue(visitor.VisitedDocument);
             Assert.AreEqual("ToonDocument visited", result);
         }
@@ -29,7 +29,7 @@ namespace ToonTokenizerTest.Ast
         {
             var source = "# Just a comment";
             var result = Toon.Parse(source);
-            
+
             Assert.IsNotNull(result.Document);
             Assert.HasCount(0, result.Document.Properties);
         }
@@ -39,7 +39,7 @@ namespace ToonTokenizerTest.Ast
         {
             var source = "name: John";
             var result = Toon.Parse(source);
-            
+
             Assert.IsTrue(result.IsSuccess);
             Assert.HasCount(1, result.Document.Properties);
             Assert.AreEqual("name", result.Document.Properties[0].Key);
@@ -52,7 +52,7 @@ namespace ToonTokenizerTest.Ast
 age: 30
 city: Boulder";
             var result = Toon.Parse(source);
-            
+
             Assert.IsTrue(result.IsSuccess);
             Assert.HasCount(3, result.Document.Properties);
         }
@@ -65,7 +65,7 @@ city: Boulder";
 settings:
   theme: dark";
             var result = Toon.Parse(source);
-            
+
             Assert.IsTrue(result.IsSuccess);
             Assert.HasCount(2, result.Document.Properties);
             Assert.IsInstanceOfType<ObjectNode>(result.Document.Properties[0].Value);
@@ -77,7 +77,7 @@ settings:
         {
             var source = "name: John";
             var result = Toon.Parse(source);
-            
+
             var doc = result.Document;
             Assert.AreEqual(1, doc.StartLine);
             Assert.AreEqual(1, doc.StartColumn);
@@ -91,15 +91,15 @@ settings:
         [TestMethod]
         public void PropertyNode_Accept_CallsVisitorMethod()
         {
-            var property = new PropertyNode 
-            { 
+            var property = new PropertyNode
+            {
                 Key = "test",
                 Value = new StringValueNode { Value = "value" }
             };
             var visitor = new TestVisitor();
-            
+
             var result = property.Accept(visitor);
-            
+
             Assert.IsTrue(visitor.VisitedProperty);
             Assert.AreEqual("PropertyNode visited", result);
         }
@@ -109,7 +109,7 @@ settings:
         {
             var source = "name: John";
             var result = Toon.Parse(source);
-            
+
             var property = result.Document.Properties[0];
             Assert.AreEqual("name", property.Key);
             Assert.IsInstanceOfType<StringValueNode>(property.Value);
@@ -121,11 +121,11 @@ settings:
             var source = @"user:
   name: John";
             var result = Toon.Parse(source);
-            
+
             var userProp = result.Document.Properties[0];
             var userObj = (ObjectNode)userProp.Value;
             var nameProp = userObj.Properties[0];
-            
+
             Assert.AreEqual(0, userProp.IndentLevel);
             Assert.IsGreaterThan(0, nameProp.IndentLevel);
         }
@@ -135,7 +135,7 @@ settings:
         {
             var source = "\"quoted-key\": value";
             var result = Toon.Parse(source);
-            
+
             var property = result.Document.Properties[0];
             Assert.AreEqual("quoted-key", property.Key);
         }
@@ -145,7 +145,7 @@ settings:
         {
             var source = "snake_case_key: value";
             var result = Toon.Parse(source);
-            
+
             var property = result.Document.Properties[0];
             Assert.AreEqual("snake_case_key", property.Key);
         }
@@ -155,7 +155,7 @@ settings:
         {
             var source = "key123: value";
             var result = Toon.Parse(source);
-            
+
             var property = result.Document.Properties[0];
             Assert.AreEqual("key123", property.Key);
         }
@@ -169,9 +169,9 @@ settings:
         {
             var obj = new ObjectNode();
             var visitor = new TestVisitor();
-            
+
             var result = obj.Accept(visitor);
-            
+
             Assert.IsTrue(visitor.VisitedObject);
             Assert.AreEqual("ObjectNode visited", result);
         }
@@ -182,7 +182,7 @@ settings:
             var source = @"user:
 ";
             var result = Toon.Parse(source);
-            
+
             // Empty object might be represented as object with no properties
             Assert.IsTrue(result.IsSuccess || result.HasErrors);
         }
@@ -193,7 +193,7 @@ settings:
             var source = @"user:
   name: John";
             var result = Toon.Parse(source);
-            
+
             var obj = (ObjectNode)result.Document.Properties[0].Value;
             Assert.HasCount(1, obj.Properties);
             Assert.AreEqual("name", obj.Properties[0].Key);
@@ -207,7 +207,7 @@ settings:
   age: 30
   email: john@example.com";
             var result = Toon.Parse(source);
-            
+
             var obj = (ObjectNode)result.Document.Properties[0].Value;
             Assert.HasCount(3, obj.Properties);
             Assert.AreEqual("name", obj.Properties[0].Key);
@@ -223,11 +223,11 @@ settings:
     level3:
       value: deep";
             var result = Toon.Parse(source);
-            
+
             var level1 = (ObjectNode)result.Document.Properties[0].Value;
             var level2 = (ObjectNode)level1.Properties[0].Value;
             var level3 = (ObjectNode)level2.Properties[0].Value;
-            
+
             Assert.HasCount(1, level1.Properties);
             Assert.HasCount(1, level2.Properties);
             Assert.HasCount(1, level3.Properties);
@@ -244,7 +244,7 @@ settings:
   timeout: null
   ports[2]: 8080,8081";
             var result = Toon.Parse(source);
-            
+
             var obj = (ObjectNode)result.Document.Properties[0].Value;
             Assert.HasCount(5, obj.Properties);
             Assert.IsInstanceOfType<StringValueNode>(obj.Properties[0].Value);
@@ -262,7 +262,7 @@ settings:
 settings:
   theme: dark";
             var result = Toon.Parse(source);
-            
+
             Assert.HasCount(2, result.Document.Properties);
             Assert.IsInstanceOfType<ObjectNode>(result.Document.Properties[0].Value);
             Assert.IsInstanceOfType<ObjectNode>(result.Document.Properties[1].Value);
@@ -276,10 +276,10 @@ settings:
     name: John
     age: 30";
             var result = Toon.Parse(source);
-            
+
             var user = (ObjectNode)result.Document.Properties[0].Value;
             var profile = (ObjectNode)user.Properties[0].Value;
-            
+
             Assert.AreEqual("profile", user.Properties[0].Key);
             Assert.HasCount(2, profile.Properties);
         }
@@ -290,10 +290,10 @@ settings:
             var source = @"data:
   items[3]: a,b,c";
             var result = Toon.Parse(source);
-            
+
             var obj = (ObjectNode)result.Document.Properties[0].Value;
             var array = (ArrayNode)obj.Properties[0].Value;
-            
+
             Assert.AreEqual("items", obj.Properties[0].Key);
             Assert.HasCount(3, array.Elements);
         }
@@ -308,16 +308,16 @@ settings:
     flags:
       debug: true";
             var result = Toon.Parse(source);
-            
+
             var app = (ObjectNode)result.Document.Properties[0].Value;
             Assert.HasCount(2, app.Properties);
-            
+
             var settings = (ObjectNode)app.Properties[1].Value;
             Assert.HasCount(2, settings.Properties);
-            
+
             var colors = (ArrayNode)settings.Properties[0].Value;
             Assert.HasCount(2, colors.Elements);
-            
+
             var flags = (ObjectNode)settings.Properties[1].Value;
             Assert.HasCount(1, flags.Properties);
         }
@@ -333,13 +333,13 @@ settings:
   child:
     grandchild: value";
             var result = Toon.Parse(source);
-            
+
             var root = result.Document.Properties[0];
             var rootObj = (ObjectNode)root.Value;
             var child = rootObj.Properties[0];
             var childObj = (ObjectNode)child.Value;
             var grandchild = childObj.Properties[0];
-            
+
             Assert.AreEqual(0, root.IndentLevel);
             Assert.IsGreaterThan(root.IndentLevel, child.IndentLevel);
             Assert.IsGreaterThan(child.IndentLevel, grandchild.IndentLevel);

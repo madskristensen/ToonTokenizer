@@ -17,10 +17,17 @@ namespace ToonTokenizer
         private readonly Stack<int> _indentStack;
         private readonly List<ToonError> _errors;
         private readonly StringBuilder _stringBuilder;
+        private readonly ToonParserOptions _options;
+        private int _tokenCount;
 
-        public ToonLexer(string source)
+        public ToonLexer(string source) : this(source, ToonParserOptions.Default)
+        {
+        }
+
+        public ToonLexer(string source, ToonParserOptions? options)
         {
             _source = source ?? throw new ArgumentNullException(nameof(source));
+            _options = options ?? ToonParserOptions.Default;
             _position = 0;
             _line = 1;
             _column = 1;
@@ -28,6 +35,7 @@ namespace ToonTokenizer
             _indentStack.Push(0);
             _errors = [];
             _stringBuilder = new StringBuilder();
+            _tokenCount = 0;
         }
 
         /// <summary>
@@ -46,6 +54,23 @@ namespace ToonTokenizer
             while ((token = NextToken()).Type != TokenType.EndOfFile)
             {
                 tokens.Add(token);
+                
+                // Check token count limit (excluding EOF)
+                _tokenCount++;
+                if (_tokenCount > _options.MaxTokenCount)
+                {
+                    _errors.Add(new ToonError(
+                        $"Token count ({_tokenCount:N0}) exceeds maximum allowed ({_options.MaxTokenCount:N0}). " +
+                        $"This limit protects against algorithmic complexity attacks. " +
+                        $"To tokenize larger inputs, increase ToonParserOptions.MaxTokenCount.",
+                        token.Position,
+                        token.Length,
+                        token.Line,
+                        token.Column,
+                        ErrorCode.UnexpectedToken));
+                    // Stop tokenization to prevent excessive memory usage
+                    break;
+                }
             }
 
             tokens.Add(token); // Add EOF token
@@ -250,6 +275,9 @@ namespace ToonTokenizer
             _position++; // Skip opening quote
             _column++;
 
+            // Track string length for security validation
+            int stringLength = 0;
+
             while (_position < _source.Length && _source[_position] != quote)
             {
                 // Stop at newlines for unterminated strings (better error recovery)
@@ -315,6 +343,23 @@ namespace ToonTokenizer
 
                 _position++;
                 _column++;
+                stringLength++;
+
+                // Check string length limit
+                if (stringLength > _options.MaxStringLength)
+                {
+                    _errors.Add(new ToonError(
+                        $"String length ({stringLength:N0} characters) exceeds maximum allowed ({_options.MaxStringLength:N0}). " +
+                        $"This limit protects against memory exhaustion. " +
+                        $"To parse longer strings, increase ToonParserOptions.MaxStringLength.",
+                        start,
+                        _position - start,
+                        _line,
+                        startColumn,
+                        ErrorCode.UnexpectedToken));
+                    // Continue parsing but truncate the string
+                    break;
+                }
             }
 
             // Check for unterminated string (spec §7.1: decoders MUST reject unterminated strings)
@@ -438,6 +483,21 @@ namespace ToonTokenizer
             {
                 _position++;
                 _column++;
+                
+                // Check identifier/string length
+                int currentLength = _position - start;
+                if (currentLength > _options.MaxStringLength)
+                {
+                    _errors.Add(new ToonError(
+                        $"Identifier length ({currentLength:N0} characters) exceeds maximum allowed ({_options.MaxStringLength:N0}). " +
+                        $"To parse longer identifiers, increase ToonParserOptions.MaxStringLength.",
+                        start,
+                        currentLength,
+                        _line,
+                        startColumn,
+                        ErrorCode.UnexpectedToken));
+                    break;
+                }
             }
 
             string value = _source.Substring(start, _position - start);
@@ -478,6 +538,21 @@ namespace ToonTokenizer
             {
                 _position++;
                 _column++;
+                
+                // Check unquoted string length
+                int currentLength = _position - start;
+                if (currentLength > _options.MaxStringLength)
+                {
+                    _errors.Add(new ToonError(
+                        $"Unquoted string length ({currentLength:N0} characters) exceeds maximum allowed ({_options.MaxStringLength:N0}). " +
+                        $"To parse longer strings, increase ToonParserOptions.MaxStringLength.",
+                        start,
+                        currentLength,
+                        _line,
+                        startColumn,
+                        ErrorCode.UnexpectedToken));
+                    break;
+                }
             }
 
             string value = _source.Substring(start, _position - start);

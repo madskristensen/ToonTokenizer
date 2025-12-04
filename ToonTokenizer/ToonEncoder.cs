@@ -15,10 +15,12 @@ namespace ToonTokenizer
     /// </remarks>
     public class ToonEncoder(ToonEncoderOptions options)
     {
-        // Cached Regex patterns for performance (10-15% improvement)
-        private static readonly Regex NumericPattern = new(@"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$", RegexOptions.Compiled);
-        private static readonly Regex LeadingZeroPattern = new(@"^0\d+$", RegexOptions.Compiled);
-        private static readonly Regex KeyPattern = new(@"^[A-Za-z_][A-Za-z0-9_.]*$", RegexOptions.Compiled);
+        // Regex patterns with timeout to prevent ReDoS attacks
+        // 1 second timeout is reasonable for these simple patterns
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+        private readonly Regex _numericPattern = new(@"^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$", RegexOptions.None, RegexTimeout);
+        private readonly Regex _leadingZeroPattern = new(@"^0\d+$", RegexOptions.None, RegexTimeout);
+        private readonly Regex _keyPattern = new(@"^[A-Za-z_][A-Za-z0-9_.]*$", RegexOptions.None, RegexTimeout);
 
         /// <summary>
         /// Creates a new ToonEncoder with default options.
@@ -33,6 +35,9 @@ namespace ToonTokenizer
         /// </summary>
         /// <param name="json">The JSON string to convert (supports JSONC with comments).</param>
         /// <returns>A TOON formatted string.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when json is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when json is empty/whitespace or exceeds size limits.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when options are not initialized.</exception>
         public string EncodeFromJson(string json)
         {
             if (json == null)
@@ -43,6 +48,17 @@ namespace ToonTokenizer
 
             if (options == null)
                 throw new InvalidOperationException("Options must be initialized before calling EncodeFromJson.");
+
+            // Validate input size to prevent DoS attacks
+            // Use reasonable limit of 10MB for JSON input (same as parser default)
+            const int MaxJsonInputSize = 10 * 1024 * 1024; // 10 MB
+            if (json.Length > MaxJsonInputSize)
+            {
+                throw new ArgumentException(
+                    $"Input JSON size ({json.Length:N0} bytes) exceeds maximum allowed size ({MaxJsonInputSize:N0} bytes). " +
+                    $"This limit protects against memory exhaustion during encoding.",
+                    nameof(json));
+            }
 
             // Configure options to support JSONC (JSON with comments)
             var jsonOptions = new JsonDocumentOptions
@@ -439,7 +455,7 @@ namespace ToonTokenizer
             }
         }
 
-        private static void EncodeInlineArray(JsonElement array, StringBuilder sb, string activeDelimiter)
+        private void EncodeInlineArray(JsonElement array, StringBuilder sb, string activeDelimiter)
         {
             // Direct append without intermediate List allocation
             bool first = true;
@@ -451,12 +467,12 @@ namespace ToonTokenizer
             }
         }
 
-        private static void EncodeValue(JsonElement element, StringBuilder sb, string delimiter)
+        private void EncodeValue(JsonElement element, StringBuilder sb, string delimiter)
         {
             sb.Append(FormatValue(element, delimiter));
         }
 
-        private static string FormatValue(JsonElement element, string delimiter)
+        private string FormatValue(JsonElement element, string delimiter)
         {
             switch (element.ValueKind)
             {
@@ -569,7 +585,7 @@ namespace ToonTokenizer
                    element.ValueKind == JsonValueKind.Null;
         }
 
-        private static bool NeedsQuoting(string value, string delimiter)
+        private bool NeedsQuoting(string value, string delimiter)
         {
             // §7.2: String quoting rules
             if (string.IsNullOrEmpty(value))
@@ -585,8 +601,16 @@ namespace ToonTokenizer
 
             // Numeric-like patterns (§7.2)
             // Matches: /^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i or /^0\d+$/
-            if (NumericPattern.IsMatch(value) || LeadingZeroPattern.IsMatch(value))
+            try
+            {
+                if (_numericPattern.IsMatch(value) || _leadingZeroPattern.IsMatch(value))
+                    return true;
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // If regex times out, err on the side of caution and quote the string
                 return true;
+            }
 
             // Contains structural characters
             if (value.Contains(':') || value.Contains('\\') || value.Contains('"') ||
@@ -619,11 +643,19 @@ namespace ToonTokenizer
                 .Replace("\t", "\\t");
         }
 
-        private static string EscapeKey(string key)
+        private string EscapeKey(string key)
         {
             // §7.3: Keys MAY be unquoted only if they match: ^[A-Za-z_][A-Za-z0-9_.]*$
-            if (!KeyPattern.IsMatch(key))
+            try
+            {
+                if (!_keyPattern.IsMatch(key))
+                    return $"\"{EscapeString(key)}\"";
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // If regex times out, quote the key for safety
                 return $"\"{EscapeString(key)}\"";
+            }
             return key;
         }
 

@@ -37,17 +37,25 @@ namespace ToonTokenizer
         private int _position;
         private readonly Stack<Delimiter> _delimiterStack;
         private readonly List<ToonError> _errors;
+        private readonly ToonParserOptions _options;
+        private int _currentDepth;
 
         // Constants
         private const int AverageTokenLength = 10;
 
-        public ToonParser(List<Token> tokens)
+        public ToonParser(List<Token> tokens) : this(tokens, ToonParserOptions.Default)
+        {
+        }
+
+        public ToonParser(List<Token> tokens, ToonParserOptions? options)
         {
             _tokens = tokens ?? throw new ArgumentNullException(nameof(tokens));
+            _options = options ?? ToonParserOptions.Default;
             _position = 0;
             _delimiterStack = new Stack<Delimiter>();
             _delimiterStack.Push(Delimiter.Comma); // Document delimiter default
             _errors = [];
+            _currentDepth = 0;
         }
 
         /// <summary>
@@ -272,7 +280,41 @@ namespace ToonTokenizer
 
             if (CurrentToken.Type == TokenType.Number)
             {
-                arraySize = (int)double.Parse(CurrentToken.Value, CultureInfo.InvariantCulture);
+                // Parse array size with overflow protection
+                double sizeValue = double.Parse(CurrentToken.Value, CultureInfo.InvariantCulture);
+                
+                // Check for overflow or negative values
+                if (sizeValue < 0 || sizeValue > int.MaxValue)
+                {
+                    RecordError(
+                        $"Invalid array size: {sizeValue}. Array size must be between 0 and {int.MaxValue:N0}.",
+                        CurrentToken,
+                        false,
+                        ErrorCode.ArraySizeMismatch);
+                    arraySize = 0; // Use 0 as safe fallback
+                }
+                else
+                {
+                    int size = (int)sizeValue;
+                    
+                    // Validate against configured maximum
+                    if (size > _options.MaxArraySize)
+                    {
+                        RecordError(
+                            $"Array size ({size:N0}) exceeds maximum allowed size ({_options.MaxArraySize:N0}). " +
+                            $"This limit protects against memory exhaustion. " +
+                            $"To parse larger arrays, increase ToonParserOptions.MaxArraySize.",
+                            CurrentToken,
+                            false,
+                            ErrorCode.ArraySizeMismatch);
+                        arraySize = _options.MaxArraySize; // Clamp to maximum
+                    }
+                    else
+                    {
+                        arraySize = size;
+                    }
+                }
+                
                 Advance();
                 SkipNonDelimiterWhitespace();
             }
@@ -555,48 +597,70 @@ namespace ToonTokenizer
 
         private ObjectNode ParseObject(int indentLevel)
         {
-            var obj = new ObjectNode();
-            var startToken = GetStartToken();
-
-            SkipWhitespaceAndComments();
-
-            while (!IsAtEnd())
+            // Check nesting depth before recursing
+            _currentDepth++;
+            if (_currentDepth > _options.MaxNestingDepth)
             {
-                // Stop if indentation falls below the object's indent level
-                int currentIndent = GetCurrentIndentation();
-                if (currentIndent < indentLevel)
-                    break;
+                _currentDepth--; // Restore depth
+                RecordError(
+                    $"Maximum nesting depth ({_options.MaxNestingDepth}) exceeded. " +
+                    $"Deep nesting can indicate malformed data or potential DoS attack. " +
+                    $"To parse deeper structures, increase ToonParserOptions.MaxNestingDepth.",
+                    CurrentToken,
+                    false,
+                    ErrorCode.UnexpectedToken);
+                return new ObjectNode(); // Return empty object
+            }
 
-                // If we encounter a deeper indent than expected, treat it as nested content
-                // and skip to avoid hard failures on minor tokenizer differences.
-                if (currentIndent > indentLevel)
-                {
-                    // Consume the token line and continue
-                    Advance();
-                    SkipWhitespaceAndComments();
-                    continue;
-                }
-
-                var property = ParseProperty(indentLevel);
-                if (property != null)
-                {
-                    obj.Properties.Add(property);
-                }
+            try
+            {
+                var obj = new ObjectNode();
+                var startToken = GetStartToken();
 
                 SkipWhitespaceAndComments();
+
+                while (!IsAtEnd())
+                {
+                    // Stop if indentation falls below the object's indent level
+                    int currentIndent = GetCurrentIndentation();
+                    if (currentIndent < indentLevel)
+                        break;
+
+                    // If we encounter a deeper indent than expected, treat it as nested content
+                    // and skip to avoid hard failures on minor tokenizer differences.
+                    if (currentIndent > indentLevel)
+                    {
+                        // Consume the token line and continue
+                        Advance();
+                        SkipWhitespaceAndComments();
+                        continue;
+                    }
+
+                    var property = ParseProperty(indentLevel);
+                    if (property != null)
+                    {
+                        obj.Properties.Add(property);
+                    }
+
+                    SkipWhitespaceAndComments();
+                }
+
+                SetNodePositions(obj, startToken, GetEndToken());
+
+                if (obj.Properties.Count > 0)
+                {
+                    var lastProp = obj.Properties[obj.Properties.Count - 1];
+                    obj.EndLine = lastProp.EndLine;
+                    obj.EndColumn = lastProp.EndColumn;
+                    obj.EndPosition = lastProp.EndPosition;
+                }
+
+                return obj;
             }
-
-            SetNodePositions(obj, startToken, GetEndToken());
-
-            if (obj.Properties.Count > 0)
+            finally
             {
-                var lastProp = obj.Properties[obj.Properties.Count - 1];
-                obj.EndLine = lastProp.EndLine;
-                obj.EndColumn = lastProp.EndColumn;
-                obj.EndPosition = lastProp.EndPosition;
+                _currentDepth--;
             }
-
-            return obj;
         }
 
         private TableArrayNode ParseTableArray(int size, List<string> schema, int indentLevel)
@@ -1090,10 +1154,26 @@ namespace ToonTokenizer
         /// </summary>
         private ArrayNode ParseExpandedArray(int size, int indentLevel)
         {
-            var array = new ArrayNode { DeclaredSize = size };
-            var startToken = GetStartToken();
+            // Check nesting depth before recursing
+            _currentDepth++;
+            if (_currentDepth > _options.MaxNestingDepth)
+            {
+                _currentDepth--; // Restore depth
+                RecordError(
+                    $"Maximum nesting depth ({_options.MaxNestingDepth}) exceeded. " +
+                    $"Deep nesting can indicate malformed data or potential DoS attack.",
+                    CurrentToken,
+                    false,
+                    ErrorCode.UnexpectedToken);
+                return new ArrayNode { DeclaredSize = size }; // Return empty array
+            }
 
-            SkipWhitespaceAndComments();
+            try
+            {
+                var array = new ArrayNode { DeclaredSize = size };
+                var startToken = GetStartToken();
+
+                SkipWhitespaceAndComments();
 
             // Allow empty expanded arrays
             if (IsAtEnd() || CurrentToken.Type == TokenType.EndOfFile ||
@@ -1304,6 +1384,11 @@ namespace ToonTokenizer
 
             return array;
         }
+        finally
+        {
+            _currentDepth--;
+        }
+    }
 
         private Token CurrentToken => _position < _tokens.Count ? _tokens[_position] : _tokens[_tokens.Count - 1];
 
