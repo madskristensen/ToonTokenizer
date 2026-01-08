@@ -9,12 +9,17 @@ namespace ToonTokenizer
     /// </summary>
     public class ToonLexer
     {
+        private const string NewlineValue = "\n";
+        private const int MaxIndentDepth = 128; // Pre-allocated for typical nesting
+        
         private readonly string _source;
         private int _position;
         private int _line;
         private int _column;
 
-        private readonly Stack<int> _indentStack;
+        // Array-based indent stack for better performance than Stack<int>
+        private readonly int[] _indentLevels;
+        private int _indentDepth; // Current position in _indentLevels array
         private readonly List<ToonError> _errors;
         private readonly StringBuilder _stringBuilder;
         private readonly ToonParserOptions _options;
@@ -31,8 +36,9 @@ namespace ToonTokenizer
             _position = 0;
             _line = 1;
             _column = 1;
-            _indentStack = new Stack<int>();
-            _indentStack.Push(0);
+            _indentLevels = new int[MaxIndentDepth];
+            _indentLevels[0] = 0;
+            _indentDepth = 0;
             _errors = [];
             _stringBuilder = new StringBuilder();
             _tokenCount = 0;
@@ -85,9 +91,9 @@ namespace ToonTokenizer
             // Handle dedents at end of file
             if (_position >= _source.Length)
             {
-                if (_indentStack.Count > 1)
+                if (_indentDepth > 0)
                 {
-                    _indentStack.Pop();
+                    _indentDepth--;
                     return CreateToken(TokenType.Dedent, string.Empty);
                 }
                 return CreateToken(TokenType.EndOfFile, string.Empty);
@@ -166,64 +172,95 @@ namespace ToonTokenizer
             int start = _position;
             int startColumn = _column;
 
-            while (_position < _source.Length && (_source[_position] == ' ' || _source[_position] == '\t'))
+            while (_position < _source.Length)
             {
+                char c = _source[_position];
+                if (c != ' ' && c != '\t')
+                    break;
                 _position++;
                 _column++;
             }
 
-            string value = _source.Substring(start, _position - start);
-            return new Token(TokenType.Whitespace, value, _line, startColumn, start, value.Length);
+            int length = _position - start;
+            string value = _source.Substring(start, length);
+            return new Token(TokenType.Whitespace, value, _line, startColumn, start, length);
         }
 
         private Token ConsumeNewline()
         {
             int start = _position;
-            int startColumn = _column;
             int startLine = _line;
+            string source = _source;
+            int pos = _position;
 
-            if (_source[_position] == '\r' && Peek() == '\n')
+            // Handle \r\n or \n or \r
+            if (source[pos] == '\r')
             {
-                _position += 2;
+                pos++;
+                if (pos < source.Length && source[pos] == '\n')
+                {
+                    pos++;
+                }
             }
             else
             {
-                _position++;
+                pos++;
             }
 
             _line++;
-            _column = 1;
 
-            // Check indentation on the next line
-            if (_position < _source.Length)
-            {
-                ProcessIndentation();
-            }
-
-            return new Token(TokenType.Newline, "\n", startLine, startColumn, start, _position - start);
-        }
-
-        private void ProcessIndentation()
-        {
+            // Inline ProcessIndentation for better performance
             int indentCount = 0;
-            while (_position < _source.Length && _source[_position] == ' ')
+            int sourceLength = source.Length;
+            while (pos < sourceLength && source[pos] == ' ')
             {
                 indentCount++;
-                _position++;
-                _column++;
+                pos++;
             }
+            _column = 1 + indentCount;
+            _position = pos;
 
-            int currentIndent = _indentStack.Peek();
-
+            int currentIndent = _indentLevels[_indentDepth];
             if (indentCount > currentIndent)
             {
-                _indentStack.Push(indentCount);
+                _indentDepth++;
+                _indentLevels[_indentDepth] = indentCount;
             }
             else if (indentCount < currentIndent)
             {
-                while (_indentStack.Count > 1 && _indentStack.Peek() > indentCount)
+                while (_indentDepth > 0 && _indentLevels[_indentDepth] > indentCount)
                 {
-                    _indentStack.Pop();
+                    _indentDepth--;
+                }
+            }
+
+            return new Token(TokenType.Newline, NewlineValue, startLine, 1, start, pos - start);
+        }
+
+        // ProcessIndentation is now inlined in ConsumeNewline for performance
+        // Keep this method for potential future use with other entry points
+        private void ProcessIndentation()
+        {
+            int indentCount = 0;
+            int sourceLength = _source.Length;
+            while (_position < sourceLength && _source[_position] == ' ')
+            {
+                indentCount++;
+                _position++;
+            }
+            _column += indentCount;
+
+            int currentIndent = _indentLevels[_indentDepth];
+            if (indentCount > currentIndent)
+            {
+                _indentDepth++;
+                _indentLevels[_indentDepth] = indentCount;
+            }
+            else if (indentCount < currentIndent)
+            {
+                while (_indentDepth > 0 && _indentLevels[_indentDepth] > indentCount)
+                {
+                    _indentDepth--;
                 }
             }
         }
@@ -477,19 +514,25 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
+            int maxLen = _options.MaxStringLength;
 
             // Allow hyphens, dots, and @ within value tokens (kebab-case, dotted paths, and emails)
-            while (_position < _source.Length && (char.IsLetterOrDigit(_source[_position]) || _source[_position] == '_' || _source[_position] == '-' || _source[_position] == '.' || _source[_position] == '@'))
+            // Use char.IsLetterOrDigit to support Unicode letters (e.g., Japanese, Chinese, etc.)
+            while (_position < _source.Length)
             {
+                char c = _source[_position];
+                if (!(char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.' || c == '@'))
+                    break;
+
                 _position++;
                 _column++;
                 
                 // Check identifier/string length
                 int currentLength = _position - start;
-                if (currentLength > _options.MaxStringLength)
+                if (currentLength > maxLen)
                 {
                     _errors.Add(new ToonError(
-                        $"Identifier length ({currentLength:N0} characters) exceeds maximum allowed ({_options.MaxStringLength:N0}). " +
+                        $"Identifier length ({currentLength:N0} characters) exceeds maximum allowed ({maxLen:N0}). " +
                         $"To parse longer identifiers, increase ToonParserOptions.MaxStringLength.",
                         start,
                         currentLength,
@@ -500,33 +543,38 @@ namespace ToonTokenizer
                 }
             }
 
-            string value = _source.Substring(start, _position - start);
-            TokenType type;
+            int length = _position - start;
+            string value = _source.Substring(start, length);
 
-            switch (value)
+            // Fast keyword detection using length check first (avoids unnecessary comparisons)
+            if (length == 4)
             {
-                case "true": type = TokenType.True; return new Token(type, value, _line, startColumn, start, value.Length);
-                case "false": type = TokenType.False; return new Token(type, value, _line, startColumn, start, value.Length);
-                case "null": type = TokenType.Null; return new Token(type, value, _line, startColumn, start, value.Length);
+                if (value == "true")
+                    return new Token(TokenType.True, value, _line, startColumn, start, 4);
+                if (value == "null")
+                    return new Token(TokenType.Null, value, _line, startColumn, start, 4);
+            }
+            else if (length == 5 && value == "false")
+            {
+                return new Token(TokenType.False, value, _line, startColumn, start, 5);
             }
 
             // Look ahead (without consuming) to classify as Identifier (property key) or String (value)
             int look = _position;
             // Skip any spaces between word and possible structural char
-            while (look < _source.Length && (_source[look] == ' ' || _source[look] == '\t')) look++;
+            while (look < _source.Length)
+            {
+                char c = _source[look];
+                if (c != ' ' && c != '\t')
+                    break;
+                look++;
+            }
             char next = look < _source.Length ? _source[look] : '\0';
 
             // Property key patterns: directly followed by ':' OR '[' OR '{'
-            if (next == ':' || next == '[' || next == '{')
-            {
-                type = TokenType.Identifier;
-            }
-            else
-            {
-                type = TokenType.String;
-            }
+            TokenType type = (next == ':' || next == '[' || next == '{') ? TokenType.Identifier : TokenType.String;
 
-            return new Token(type, value, _line, startColumn, start, value.Length);
+            return new Token(type, value, _line, startColumn, start, length);
         }
 
         private Token ConsumeUnquotedString()
