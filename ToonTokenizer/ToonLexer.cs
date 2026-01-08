@@ -171,18 +171,23 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
+            string source = _source;
+            int sourceLength = source.Length;
+            int pos = _position;
 
-            while (_position < _source.Length)
+            while (pos < sourceLength)
             {
-                char c = _source[_position];
+                char c = source[pos];
                 if (c != ' ' && c != '\t')
                     break;
-                _position++;
-                _column++;
+                pos++;
             }
 
-            int length = _position - start;
-            string value = _source.Substring(start, length);
+            int length = pos - start;
+            _position = pos;
+            _column = startColumn + length;
+
+            string value = source.Substring(start, length);
             return new Token(TokenType.Whitespace, value, _line, startColumn, start, length);
         }
 
@@ -269,26 +274,33 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
+            string source = _source;
+            int sourceLength = source.Length;
+            int pos = _position;
 
-            if (_source[_position] == '#')
+            if (source[pos] == '#')
             {
-                _position++;
-                _column++;
+                pos++;
             }
-            else if (_source[_position] == '/' && Peek() == '/')
+            else if (source[pos] == '/' && pos + 1 < sourceLength && source[pos + 1] == '/')
             {
-                _position += 2;
-                _column += 2;
-            }
-
-            while (_position < _source.Length && _source[_position] != '\n' && _source[_position] != '\r')
-            {
-                _position++;
-                _column++;
+                pos += 2;
             }
 
-            string value = _source.Substring(start, _position - start);
-            return new Token(TokenType.Comment, value, _line, startColumn, start, value.Length);
+            while (pos < sourceLength)
+            {
+                char c = source[pos];
+                if (c == '\n' || c == '\r')
+                    break;
+                pos++;
+            }
+
+            int length = pos - start;
+            _position = pos;
+            _column = startColumn + length;
+
+            string value = source.Substring(start, length);
+            return new Token(TokenType.Comment, value, _line, startColumn, start, length);
         }
 
         private Token ConsumeSingleChar(TokenType type)
@@ -436,78 +448,93 @@ namespace ToonTokenizer
         {
             int start = _position;
             int startColumn = _column;
+            string source = _source;
+            int sourceLength = source.Length;
+            int pos = _position;
 
-            if (_source[_position] == '-')
+            if (source[pos] == '-')
             {
-                _position++;
-                _column++;
+                pos++;
             }
 
-            int digitStart = _position;
-            while (_position < _source.Length && char.IsDigit(_source[_position]))
+            int digitStart = pos;
+            while (pos < sourceLength && IsAsciiDigit(source[pos]))
             {
-                _position++;
-                _column++;
+                pos++;
             }
 
             bool hasDot = false;
-            if (_position < _source.Length && _source[_position] == '.')
+            if (pos < sourceLength && source[pos] == '.')
             {
                 hasDot = true;
-                _position++;
-                _column++;
+                pos++;
 
-                while (_position < _source.Length && char.IsDigit(_source[_position]))
+                while (pos < sourceLength && IsAsciiDigit(source[pos]))
                 {
-                    _position++;
-                    _column++;
+                    pos++;
                 }
             }
 
             bool hasExponent = false;
-            if (_position < _source.Length && (_source[_position] == 'e' || _source[_position] == 'E'))
+            if (pos < sourceLength)
             {
-                hasExponent = true;
-                _position++;
-                _column++;
-
-                if (_position < _source.Length && (_source[_position] == '+' || _source[_position] == '-'))
+                char expChar = source[pos];
+                if (expChar == 'e' || expChar == 'E')
                 {
-                    _position++;
-                    _column++;
-                }
+                    hasExponent = true;
+                    pos++;
 
-                while (_position < _source.Length && char.IsDigit(_source[_position]))
-                {
-                    _position++;
-                    _column++;
+                    if (pos < sourceLength)
+                    {
+                        char signChar = source[pos];
+                        if (signChar == '+' || signChar == '-')
+                        {
+                            pos++;
+                        }
+                    }
+
+                    while (pos < sourceLength && IsAsciiDigit(source[pos]))
+                    {
+                        pos++;
+                    }
                 }
             }
 
-            string value = _source.Substring(start, _position - start);
+            int length = pos - start;
+            _position = pos;
+            _column = startColumn + length;
+
+            string value = source.Substring(start, length);
 
             // TOON spec: Check for forbidden leading zeros
             // Forbidden: "05", "0001", "-01" (integers with leading zeros, excluding "0", "-0")
             // Allowed: "0", "-0", "0.1", "-0.1", "1e-6"
-            // Extract just the integer part before decimal or exponent
-            int integerPartEnd = digitStart;
-            while (integerPartEnd < _source.Length && char.IsDigit(_source[integerPartEnd]))
-            {
-                integerPartEnd++;
-            }
-            string integerPart = _source.Substring(digitStart, integerPartEnd - digitStart);
-
             // Check if it's an integer (no dot, no exponent) with forbidden leading zeros
             bool isInteger = !hasDot && !hasExponent;
-            bool hasForbiddenLeadingZero = isInteger && integerPart.Length > 1 && integerPart[0] == '0';
+            int integerPartLength = 0;
+            int checkPos = digitStart;
+            while (checkPos < sourceLength && IsAsciiDigit(source[checkPos]))
+            {
+                integerPartLength++;
+                checkPos++;
+            }
+            bool hasForbiddenLeadingZero = isInteger && integerPartLength > 1 && source[digitStart] == '0';
 
             if (hasForbiddenLeadingZero)
             {
                 // Treat as string per TOON spec
-                return new Token(TokenType.String, value, _line, startColumn, start, value.Length);
+                return new Token(TokenType.String, value, _line, startColumn, start, length);
             }
 
-            return new Token(TokenType.Number, value, _line, startColumn, start, value.Length);
+            return new Token(TokenType.Number, value, _line, startColumn, start, length);
+        }
+
+        /// <summary>
+        /// Fast ASCII digit check (avoids char.IsDigit Unicode overhead).
+        /// </summary>
+        private static bool IsAsciiDigit(char c)
+        {
+            return (uint)(c - '0') <= 9;
         }
 
         private Token ConsumeIdentifierOrKeyword()
@@ -515,13 +542,16 @@ namespace ToonTokenizer
             int start = _position;
             int startColumn = _column;
             int maxLen = _options.MaxStringLength;
+            string source = _source;
+            int sourceLength = source.Length;
 
             // Allow hyphens, dots, and @ within value tokens (kebab-case, dotted paths, and emails)
-            // Use char.IsLetterOrDigit to support Unicode letters (e.g., Japanese, Chinese, etc.)
-            while (_position < _source.Length)
+            // Use fast ASCII checks with fallback to char.IsLetterOrDigit for Unicode
+            while (_position < sourceLength)
             {
-                char c = _source[_position];
-                if (!(char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.' || c == '@'))
+                char c = source[_position];
+                // Fast path for common ASCII characters
+                if (!IsIdentifierChar(c))
                     break;
 
                 _position++;
@@ -544,55 +574,74 @@ namespace ToonTokenizer
             }
 
             int length = _position - start;
-            string value = _source.Substring(start, length);
 
-            // Fast keyword detection using length check first (avoids unnecessary comparisons)
+            // Fast keyword detection using first char + length checks (avoids substring allocation for keywords)
             if (length == 4)
             {
-                if (value == "true")
-                    return new Token(TokenType.True, value, _line, startColumn, start, 4);
-                if (value == "null")
-                    return new Token(TokenType.Null, value, _line, startColumn, start, 4);
+                char first = source[start];
+                if (first == 't' && source[start + 1] == 'r' && source[start + 2] == 'u' && source[start + 3] == 'e')
+                    return new Token(TokenType.True, "true", _line, startColumn, start, 4);
+                if (first == 'n' && source[start + 1] == 'u' && source[start + 2] == 'l' && source[start + 3] == 'l')
+                    return new Token(TokenType.Null, "null", _line, startColumn, start, 4);
             }
-            else if (length == 5 && value == "false")
+            else if (length == 5)
             {
-                return new Token(TokenType.False, value, _line, startColumn, start, 5);
+                if (source[start] == 'f' && source[start + 1] == 'a' && source[start + 2] == 'l' && source[start + 3] == 's' && source[start + 4] == 'e')
+                    return new Token(TokenType.False, "false", _line, startColumn, start, 5);
             }
 
             // Look ahead (without consuming) to classify as Identifier (property key) or String (value)
             int look = _position;
             // Skip any spaces between word and possible structural char
-            while (look < _source.Length)
+            while (look < sourceLength)
             {
-                char c = _source[look];
+                char c = source[look];
                 if (c != ' ' && c != '\t')
                     break;
                 look++;
             }
-            char next = look < _source.Length ? _source[look] : '\0';
+            char next = look < sourceLength ? source[look] : '\0';
 
             // Property key patterns: directly followed by ':' OR '[' OR '{'
             TokenType type = (next == ':' || next == '[' || next == '{') ? TokenType.Identifier : TokenType.String;
 
+            string value = source.Substring(start, length);
             return new Token(type, value, _line, startColumn, start, length);
+        }
+
+        /// <summary>
+        /// Fast check for identifier characters. Uses optimized ASCII checks with fallback to Unicode.
+        /// </summary>
+        private static bool IsIdentifierChar(char c)
+        {
+            // Fast path for common ASCII: a-z, A-Z, 0-9, _, -, ., @
+            if ((uint)(c - 'a') <= 'z' - 'a') return true;
+            if ((uint)(c - 'A') <= 'Z' - 'A') return true;
+            if ((uint)(c - '0') <= '9' - '0') return true;
+            if (c == '_' || c == '-' || c == '.' || c == '@') return true;
+            // Fallback to Unicode for non-ASCII letters/digits (e.g., Japanese, Chinese, etc.)
+            return c > 127 && char.IsLetterOrDigit(c);
         }
 
         private Token ConsumeUnquotedString()
         {
             int start = _position;
             int startColumn = _column;
+            string source = _source;
+            int sourceLength = source.Length;
+            int maxLen = _options.MaxStringLength;
+            int pos = _position;
 
-            while (_position < _source.Length && IsUnquotedStringChar(_source[_position]))
+            while (pos < sourceLength && IsUnquotedStringChar(source[pos]))
             {
-                _position++;
-                _column++;
+                pos++;
                 
                 // Check unquoted string length
-                int currentLength = _position - start;
-                if (currentLength > _options.MaxStringLength)
+                int currentLength = pos - start;
+                if (currentLength > maxLen)
                 {
                     _errors.Add(new ToonError(
-                        $"Unquoted string length ({currentLength:N0} characters) exceeds maximum allowed ({_options.MaxStringLength:N0}). " +
+                        $"Unquoted string length ({currentLength:N0} characters) exceeds maximum allowed ({maxLen:N0}). " +
                         $"To parse longer strings, increase ToonParserOptions.MaxStringLength.",
                         start,
                         currentLength,
@@ -603,8 +652,12 @@ namespace ToonTokenizer
                 }
             }
 
-            string value = _source.Substring(start, _position - start);
-            return new Token(TokenType.String, value, _line, startColumn, start, value.Length);
+            int length = pos - start;
+            _position = pos;
+            _column = startColumn + length;
+
+            string value = source.Substring(start, length);
+            return new Token(TokenType.String, value, _line, startColumn, start, length);
         }
 
         private bool IsUnquotedStringStart(char c)
