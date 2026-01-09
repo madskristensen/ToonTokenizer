@@ -5,7 +5,7 @@ namespace ToonTokenizer
     /// <summary>
     /// Represents a single token in the TOON language with position tracking.
     /// </summary>
-    public class Token
+    public readonly struct Token : IEquatable<Token>
     {
         /// <summary>
         /// The type of this token.
@@ -52,17 +52,18 @@ namespace ToonTokenizer
             return $"{Type}({Value}) at {Line}:{Column}";
         }
 
+        public bool Equals(Token other)
+        {
+            return Type == other.Type &&
+                   Value == other.Value &&
+                   Line == other.Line &&
+                   Column == other.Column &&
+                   Position == other.Position;
+        }
+
         public override bool Equals(object? obj)
         {
-            if (obj is Token other)
-            {
-                return Type == other.Type &&
-                       Value == other.Value &&
-                       Line == other.Line &&
-                       Column == other.Column &&
-                       Position == other.Position;
-            }
-            return false;
+            return obj is Token other && Equals(other);
         }
 
         public override int GetHashCode()
@@ -78,5 +79,8 @@ namespace ToonTokenizer
                 return hash;
             }
         }
+
+        public static bool operator ==(Token left, Token right) => left.Equals(right);
+        public static bool operator !=(Token left, Token right) => !left.Equals(right);
     }
 }

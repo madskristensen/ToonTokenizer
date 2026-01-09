@@ -42,10 +42,12 @@ namespace ToonTokenizer
         /// </example>
         public static Token? GetTokenAt(this List<Token> tokens, int line, int column)
         {
-            return tokens.FirstOrDefault(t =>
-                t.Line == line &&
-                column >= t.Column &&
-                column < t.Column + t.Length);
+            foreach (var t in tokens)
+            {
+                if (t.Line == line && column >= t.Column && column < t.Column + t.Length)
+                    return t;
+            }
+            return null;
         }
 
         /// <summary>

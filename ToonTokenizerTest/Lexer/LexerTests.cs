@@ -215,7 +215,7 @@ namespace ToonTokenizerTest.Lexer
 
             Token? line2Token = tokens.FirstOrDefault(t => t.Line == 2);
             Assert.IsNotNull(line2Token);
-            Assert.AreEqual(2, line2Token.Line);
+            Assert.AreEqual(2, line2Token.Value.Line);
         }
     }
 }

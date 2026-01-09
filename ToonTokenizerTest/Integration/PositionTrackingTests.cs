@@ -12,7 +12,7 @@ namespace ToonTokenizerTest.Integration
             var source = "name: John";
             List<Token> tokens = Toon.Tokenize(source);
 
-            foreach (Token? token in tokens.Where(t => t.Type != TokenType.EndOfFile))
+            foreach (Token token in tokens.Where(t => t.Type != TokenType.EndOfFile))
             {
                 Assert.AreEqual(1, token.Line);
             }
@@ -176,7 +176,7 @@ prop3: val3";
             // Token at position of "name" (line 1, column 1-4)
             Token? token = tokens.GetTokenAt(1, 2);
             Assert.IsNotNull(token);
-            Assert.AreEqual(TokenType.Identifier, token.Type);
+            Assert.AreEqual(TokenType.Identifier, token.Value.Type);
         }
 
         [TestMethod]
@@ -245,7 +245,7 @@ line3: value3";
 
             var structuralTokens = tokens.Where(t => t.Type != TokenType.EndOfFile).ToList();
 
-            foreach (Token? token in structuralTokens)
+            foreach (Token token in structuralTokens)
             {
                 Assert.IsTrue(token.IsStructural());
             }

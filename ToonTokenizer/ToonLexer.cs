@@ -12,6 +12,15 @@ namespace ToonTokenizer
         private const string NewlineValue = "\n";
         private const int MaxIndentDepth = 128; // Pre-allocated for typical nesting
         
+        // Cached single-char strings to avoid allocations in ConsumeSingleChar
+        private const string ColonString = ":";
+        private const string CommaString = ",";
+        private const string PipeString = "|";
+        private const string LeftBracketString = "[";
+        private const string RightBracketString = "]";
+        private const string LeftBraceString = "{";
+        private const string RightBraceString = "}";
+        
         private readonly string _source;
         private int _position;
         private int _line;
@@ -54,7 +63,10 @@ namespace ToonTokenizer
         /// </summary>
         public List<Token> Tokenize()
         {
-            var tokens = new List<Token>();
+            // Estimate token count: typical TOON has ~1 token per 4-6 chars
+            // Use source.Length / 5 as initial capacity to reduce list resizing
+            int estimatedCapacity = Math.Max(16, _source.Length / 5);
+            var tokens = new List<Token>(estimatedCapacity);
             Token token;
 
             while ((token = NextToken()).Type != TokenType.EndOfFile)
@@ -123,19 +135,19 @@ namespace ToonTokenizer
             switch (current)
             {
                 case ':':
-                    return ConsumeSingleChar(TokenType.Colon);
+                    return ConsumeSingleChar(TokenType.Colon, ColonString);
                 case ',':
-                    return ConsumeSingleChar(TokenType.Comma);
+                    return ConsumeSingleChar(TokenType.Comma, CommaString);
                 case '|':
-                    return ConsumeSingleChar(TokenType.Pipe);
+                    return ConsumeSingleChar(TokenType.Pipe, PipeString);
                 case '[':
-                    return ConsumeSingleChar(TokenType.LeftBracket);
+                    return ConsumeSingleChar(TokenType.LeftBracket, LeftBracketString);
                 case ']':
-                    return ConsumeSingleChar(TokenType.RightBracket);
+                    return ConsumeSingleChar(TokenType.RightBracket, RightBracketString);
                 case '{':
-                    return ConsumeSingleChar(TokenType.LeftBrace);
+                    return ConsumeSingleChar(TokenType.LeftBrace, LeftBraceString);
                 case '}':
-                    return ConsumeSingleChar(TokenType.RightBrace);
+                    return ConsumeSingleChar(TokenType.RightBrace, RightBraceString);
             }
 
             // String literals (quoted)
@@ -301,6 +313,17 @@ namespace ToonTokenizer
 
             string value = source.Substring(start, length);
             return new Token(TokenType.Comment, value, _line, startColumn, start, length);
+        }
+
+        private Token ConsumeSingleChar(TokenType type, string value)
+        {
+            int start = _position;
+            int startColumn = _column;
+
+            _position++;
+            _column++;
+
+            return new Token(type, value, _line, startColumn, start, 1);
         }
 
         private Token ConsumeSingleChar(TokenType type)

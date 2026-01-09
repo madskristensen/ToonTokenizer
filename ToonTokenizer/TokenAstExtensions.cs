@@ -78,7 +78,7 @@ namespace ToonTokenizer
         /// <returns>The AST node containing the token, or null if not found.</returns>
         public static AstNode? GetNodeForToken(this ToonParseResult result, Token token)
         {
-            if (result?.Document == null || token == null)
+            if (result?.Document == null)
                 return null;
 
             return token.GetAstNode(result.Document);

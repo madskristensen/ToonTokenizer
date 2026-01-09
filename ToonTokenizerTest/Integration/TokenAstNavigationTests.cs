@@ -15,7 +15,7 @@ namespace ToonTokenizerTest.Integration
             Token? token = result.Tokens.Find(t => t.Value == "John");
             Assert.IsNotNull(token);
 
-            AstNode? node = token.GetAstNode(result.Document);
+            AstNode? node = token.Value.GetAstNode(result.Document);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<StringValueNode>(node);
         }
@@ -29,7 +29,7 @@ namespace ToonTokenizerTest.Integration
             Token? token = result.Tokens.Find(t => t.Value == "30");
             Assert.IsNotNull(token);
 
-            PropertyNode? property = token.GetPropertyNode(result.Document);
+            PropertyNode? property = token.Value.GetPropertyNode(result.Document);
             Assert.IsNotNull(property);
             Assert.AreEqual("age", property.Key);
         }
@@ -43,7 +43,7 @@ namespace ToonTokenizerTest.Integration
             Token? token = result.Tokens.Find(t => t.Value == "name" && t.Type == TokenType.Identifier);
             Assert.IsNotNull(token);
 
-            PropertyNode? property = token.GetPropertyNode(result.Document);
+            PropertyNode? property = token.Value.GetPropertyNode(result.Document);
             Assert.IsNotNull(property);
             Assert.AreEqual("name", property.Key);
         }
@@ -58,7 +58,7 @@ namespace ToonTokenizerTest.Integration
             Token? token = result.Tokens.Find(t => t.Value == "John");
             Assert.IsNotNull(token);
 
-            AstNode? node = result.GetNodeAtPosition(token.Position);
+            AstNode? node = result.GetNodeAtPosition(token.Value.Position);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<StringValueNode>(node);
         }
@@ -189,7 +189,7 @@ user:
             Token? token = result.Tokens.Find(t => t.Type == TokenType.True);
             Assert.IsNotNull(token);
 
-            AstNode? node = result.GetNodeForToken(token);
+            AstNode? node = result.GetNodeForToken(token.Value);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<BooleanValueNode>(node);
         }
@@ -203,7 +203,7 @@ user:
             Token? token = result.Tokens.Find(t => t.Value == "green");
             Assert.IsNotNull(token);
 
-            AstNode? node = token.GetAstNode(result.Document);
+            AstNode? node = token.Value.GetAstNode(result.Document);
             Assert.IsNotNull(node);
             Assert.IsInstanceOfType<StringValueNode>(node);
         }
@@ -221,7 +221,7 @@ users[2]{id,name}:
             Token? token = result.Tokens.Find(t => t.Value == "Alice");
             Assert.IsNotNull(token);
 
-            PropertyNode? property = token.GetPropertyNode(result.Document);
+            PropertyNode? property = token.Value.GetPropertyNode(result.Document);
             Assert.IsNotNull(property);
             Assert.AreEqual("users", property.Key);
         }
@@ -259,7 +259,7 @@ user:
             Token? token = result.Tokens.Find(t => t.Value == "notifications");
             Assert.IsNotNull(token);
 
-            PropertyNode? property = result.GetPropertyAt(token.Line, token.Column);
+            PropertyNode? property = result.GetPropertyAt(token.Value.Line, token.Value.Column);
             Assert.IsNotNull(property);
             Assert.AreEqual("notifications", property.Key);
         }
